@@ -72,6 +72,15 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+class Node:
+    def __init__(self, state, pred, action, priority=0):
+        self.state = state
+        self.pred = pred
+        self.action = action
+        self.priority = priority
+    def __repr__(self):
+        return "State: {0}, Action: {1}".format(self.state, self.action)
+
 def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
@@ -87,17 +96,66 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    closed = set()
+    fringe = util.Stack()
+    fringe.push(Node(problem.getStartState(), None, None))
+    while fringe.isEmpty() is not True:
+        node = fringe.pop()
+        if problem.isGoalState(node.state) is True:
+            actions = list()
+            while node.action is not None:
+                actions.append(node.action)
+                node = node.pred
+            actions.reverse()
+            return actions
+        if node.state not in closed:
+            closed.add(node.state)
+            for s in problem.getSuccessors(node.state):
+                fringe.push(Node(s[0], node, s[1]))
+    return list()
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    closed = set()
+    fringe = util.Queue()
+    fringe.push(Node(problem.getStartState(), None, None))
+    while fringe.isEmpty() is not True:
+        node = fringe.pop()
+        if problem.isGoalState(node.state) is True:
+            actions = list()
+            while node.action is not None:
+                actions.append(node.action)
+                node = node.pred
+            actions.reverse()
+            return actions
+        if node.state not in closed:
+            closed.add(node.state)
+            for s in problem.getSuccessors(node.state):
+                fringe.push(Node(s[0], node, s[1]))
+    return list()
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    closed = set()
+    fringe = util.PriorityQueue()
+    fringe.push(Node(problem.getStartState(), None, None), 0)
+    while fringe.isEmpty() is not True:
+        node = fringe.pop()
+        if problem.isGoalState(node.state) is True:
+            actions = list()
+            while node.action is not None:
+                actions.append(node.action)
+                node = node.pred
+            actions.reverse()
+            return actions
+        if node.state not in closed:
+            closed.add(node.state)
+            for s in problem.getSuccessors(node.state):
+                fringe.push(Node(s[0], node, s[1], s[2]+node.priority),\
+                            s[2]+node.priority)
+    return list()
 
 def nullHeuristic(state, problem=None):
     """
@@ -109,7 +167,28 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    closed = set()
+    fringe = util.PriorityQueue()
+    start_state = problem.getStartState()
+    fringe.push(Node(start_state, None, None,\
+                heuristic(start_state, problem)),\
+                heuristic(start_state, problem))
+    while fringe.isEmpty() is not True:
+        node = fringe.pop()
+        if problem.isGoalState(node.state) is True:
+            actions = list()
+            while node.action is not None:
+                actions.append(node.action)
+                node = node.pred
+            actions.reverse()
+            return actions
+        if node.state not in closed:
+            closed.add(node.state)
+            for s in problem.getSuccessors(node.state):
+                fringe.push(Node(s[0], node, s[1], s[2]+node.priority),\
+                            s[2]+node.priority+\
+                            heuristic(s[0], problem))
+    return list()
 
 
 # Abbreviations
