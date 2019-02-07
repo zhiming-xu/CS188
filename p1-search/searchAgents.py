@@ -446,6 +446,18 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchFunction = lambda prob: search.aStarSearch(prob, foodHeuristic)
         self.searchType = FoodSearchProblem
 
+# Newly defined class, used in foodHeuristic
+class NewState:
+    def __init__(self, state, walls):
+        self.state = state
+        self.walls = walls
+    
+    def getWalls(self):
+        return self.walls
+    
+    def getPacmanPosition(self):
+        return self.state[0]
+
 def foodHeuristic(state, problem):
     """
     Your heuristic for the FoodSearchProblem goes here.
@@ -481,7 +493,8 @@ def foodHeuristic(state, problem):
         for j in range(foodGrid.width):
             if foodGrid[j][i]:
                 heuristic_value = max(heuristic_value,\
-                                  abs(j-position[0]) + abs(i-position[1]))
+                                  mazeDistance((j, i), position,\
+                                  NewState(state, problem.walls)))
     return heuristic_value
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -513,7 +526,19 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        cost = 1000000000
+        opt = []
+        for i in range(self.width):
+            for j in range(self.height):
+                if food[i, j]:
+                    prob = PositionSearchProblem(gameState,\
+                           start=startPosition, goal=(i, j),\
+                           warn=False, visualize=False)
+                    path = search.bfs(prob)
+                    if len(path)<cost:
+                        opt = path
+                        cost = len(path)
+        return path
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -549,7 +574,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.food[x, y]
 
 def mazeDistance(point1, point2, gameState):
     """
