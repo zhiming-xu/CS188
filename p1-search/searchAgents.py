@@ -528,13 +528,10 @@ class ClosestDotSearchAgent(SearchAgent):
         "*** YOUR CODE HERE ***"
         cost = 1000000000
         opt = []
-        for i in range(self.width):
-            for j in range(self.height):
-                if food[i, j]:
-                    prob = PositionSearchProblem(gameState,\
-                           start=startPosition, goal=(i, j),\
-                           warn=False, visualize=False)
-                    path = search.bfs(prob)
+        for i in range(food.width):
+            for j in range(food.height):
+                if food[i][j]:
+                    path = search.bfs(problem)
                     if len(path)<cost:
                         opt = path
                         cost = len(path)
@@ -574,7 +571,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        return self.food[x, y]
+        return self.food[x][y]
 
 def mazeDistance(point1, point2, gameState):
     """
