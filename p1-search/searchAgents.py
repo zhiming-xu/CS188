@@ -295,7 +295,7 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        ret = (self.startingPosition,) 
+        ret = (self.startingPosition, False, False, False, False) 
         return ret
 
     def isGoalState(self, state):
@@ -303,8 +303,8 @@ class CornersProblem(search.SearchProblem):
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        for corner in self.corners:
-            if corner not in state:
+        for t in state[1:]:
+            if t is False:
                 return False
         return True
 
@@ -334,13 +334,13 @@ class CornersProblem(search.SearchProblem):
             nextx, nexty = int(x + dx), int(y + dy)
             hitsWall = self.walls[nextx][nexty] 
             if hitsWall is False:
-                state_next = ((nextx, nexty),)
-                if len(state)>1:
-                    state_next += state[1:]
-                    # print('in next:', state)
-                if  (nextx, nexty) in self.corners and\
-                    (nextx, nexty) not in state_next[1:]: 
-                    state_next += ((nextx, nexty),)
+                boolean = []
+                for i in range(len(self.corners)):
+                    value = ((nextx, nexty)==self.corners[i]) or\
+                               state[i+1]
+                    boolean.append(value)
+                state_next = ((nextx, nexty), boolean[0], boolean[1],\
+                              boolean[2], boolean[3])
                 successors.append((state_next, action, 1))
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -376,10 +376,11 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    heuristic_value = 10000000000000000
-    for corner in corners:
-        heuristic_value = min(heuristic_value,\
-        abs(state[0][0]-corner[0])+abs(state[0][1]-corner[1]))
+    heuristic_value = 0
+    for i in range(len(corners)):
+        if state[i+1] is False:
+            heuristic_value = max(heuristic_value,\
+            abs(state[0][0]-corners[i][0])+abs(state[0][1]-corners[i][1]))
 
     return heuristic_value # Default to trivial solution
 
@@ -475,7 +476,13 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    heuristic_value = 0
+    for i in range(foodGrid.height):
+        for j in range(foodGrid.width):
+            if foodGrid[j][i]:
+                heuristic_value = max(heuristic_value,\
+                                  abs(j-position[0]) + abs(i-position[1]))
+    return heuristic_value
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
