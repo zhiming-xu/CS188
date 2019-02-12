@@ -23,22 +23,51 @@ IMPORTANT
 `agent` defines which agent you will use. By default, it is set to ClosestDotAgent,
 but when you're ready to test your own agent, replace it with MyAgent
 """
-def createAgents(num_pacmen, agent='ClosestDotAgent'):
+def createAgents(num_pacmen, agent='MyAgent'):
     return [eval(agent)(index=i) for i in range(num_pacmen)]
+
+opt= []
+target = []
 
 class MyAgent(Agent):
     """
     Implementation of your agent.
     """
-
     def getAction(self, state):
         """
         Returns the next action the agent will take
         """
 
         "*** YOUR CODE HERE ***"
-
-        raise NotImplementedError()
+        global opt, target
+        startPosition = state.getPacmanPosition(self.index)
+        food = state.getFood()
+        problem = AnyFoodSearchProblem(state, self.index)
+        index = self.index
+        target_i, target_j = target[index]
+        "*** YOUR CODE HERE ***"
+        flag = 0
+        if len(opt[index]) <= 1 or (target_i, target_j)== (-1, -1)\
+                                or food[target_i][target_j] is False:
+            for i in range(food.width):
+                for j in range(food.height):
+                    if food[i][j]:
+                        path = search.bfs(problem)
+                        opt[index] = path
+                        target[index] = (i, j)
+                        cost = len(path)
+                        count = 0
+                        for i in range(len(target)):
+                            if target[i] == [i, j]:
+                                count += 1
+                        flag = (count<=1)
+                        if flag:
+                            break
+                if flag:
+                    break
+        else:
+            del(opt[index][0])
+        return opt[index][0]
 
     def initialize(self):
         """
@@ -48,13 +77,14 @@ class MyAgent(Agent):
         """
 
         "*** YOUR CODE HERE"
-
-        raise NotImplementedError()
-
+        global opt, target
+        opt=[[1,] for i in range(20)]
+        target=[[-1, -1] for i in range(20)]
 """
 Put any other SearchProblems or search methods below. You may also import classes/methods in
 search.py and searchProblems.py. (ClosestDotAgent as an example below)
 """
+
 
 class ClosestDotAgent(Agent):
 
@@ -72,15 +102,24 @@ class ClosestDotAgent(Agent):
 
         "*** YOUR CODE HERE ***"
        	cost = 1000000000
-        opt = []
-        for i in range(food.width):
-            for j in range(food.height):
-                if food[i][j]:
-                    path = search.bfs(problem)
-                    if len(path)<cost:
-                        opt = path
-                        cost = len(path)
-        return path
+        global opt
+        flag = 0
+        if len(opt[self.index]) <= 1:
+            for i in range(food.width):
+                for j in range(food.height):
+                    if food[i][j]:
+                        path = search.bfs(problem)
+                        if len(path)<cost:
+                            opt[self.index] = path
+                            cost = len(path)
+                            if self.index!=0:
+                                flag=1
+                                break
+                if flag:
+                    break
+        else:
+            del(opt[self.index][0])
+        return opt[self.index]
 
     def getAction(self, state):
         return self.findPathToClosestDot(state)[0]
