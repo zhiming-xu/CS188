@@ -47,8 +47,8 @@ class MyAgent(Agent):
         target_i, target_j = target[index]
         "*** YOUR CODE HERE ***"
         flag = 0
-        if len(opt[index]) <= 1 or (target_i, target_j)== (-1, -1)\
-                                or food[target_i][target_j] is False:
+        if food[target_i][target_j] is False or\
+           (target_i, target_j)== (-1, -1) or len(opt[index])<=1:
             for i in range(food.width):
                 for j in range(food.height):
                     if food[i][j]:
@@ -78,8 +78,8 @@ class MyAgent(Agent):
 
         "*** YOUR CODE HERE"
         global opt, target
-        opt=[[1,] for i in range(20)]
-        target=[[-1, -1] for i in range(20)]
+        opt=[[1,] for i in range(10)]
+        target=[[-1, -1] for i in range(10)]
 """
 Put any other SearchProblems or search methods below. You may also import classes/methods in
 search.py and searchProblems.py. (ClosestDotAgent as an example below)
