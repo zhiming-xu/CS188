@@ -75,8 +75,6 @@ class ReflexAgent(Agent):
         new_scared_times = [ghost_state.scaredTimer for ghost_state in new_ghost_states]
 
         "*** YOUR CODE HERE ***"
-        from search import bfs
-        from searchAgents import mazeDistance, PositionSearchProblem
         nearest_ghost_dis = 1e9
         for ghost_state in new_ghost_states:
             ghost_x, ghost_y = ghost_state.getPosition()
@@ -84,9 +82,7 @@ class ReflexAgent(Agent):
             ghost_y = int(ghost_y)
             if ghost_state.scaredTimer == 0:
                 nearest_ghost_dis = min(nearest_ghost_dis,\
-                                        mazeDistance((ghost_x, ghost_y),\
-                                        new_pos, successor_game_state))
-
+                                        manhattanDistance((ghost_x, ghost_y), new_pos))
         nearest_food_dis = 1e9
         for food in foods:
             nearest_food_dis = min(nearest_food_dis, manhattanDistance(food, new_pos))
