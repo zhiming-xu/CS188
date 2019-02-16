@@ -76,19 +76,24 @@ class ReflexAgent(Agent):
 
         "*** YOUR CODE HERE ***"
         from search import bfs
-        from searchAgents import mazeDistance
+        from searchAgents import mazeDistance, PositionSearchProblem
         nearest_ghost_dis = 1e9
         for ghost_state in new_ghost_states:
+            ghost_x, ghost_y = ghost_state.getPosition()
+            ghost_x = int(ghost_x)
+            ghost_y = int(ghost_y)
             if ghost_state.scaredTimer == 0:
                 nearest_ghost_dis = min(nearest_ghost_dis,\
-                                mazeDistance(ghost_state.getPosition(),\
-                                new_pos, successor_game_state))
+                                        mazeDistance((ghost_x, ghost_y),\
+                                        new_pos, successor_game_state))
 
         nearest_food_dis = 1e9
         for food in foods:
             nearest_food_dis = min(nearest_food_dis, manhattanDistance(food, new_pos))
-        return successor_game_state.getScore() - 5 / nearest_ghost_dis\
-               - nearest_food_dis / 2
+        if not foods:
+            nearest_food_dis = 0
+        return successor_game_state.getScore() - 7 / (nearest_ghost_dis + 1)\
+               - nearest_food_dis / 3
 
 
 def scoreEvaluationFunction(currentGameState):
@@ -241,7 +246,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             successor_game_state = gameState.generateSuccessor(agentIndex, action)
             new_score = self.alphabetaSearch(successor_game_state, next_agent, next_depth,\
                                              alpha, beta)[0]
-            if min_score < new_score:
+            if new_score < min_score:
                 min_score, min_action = new_score, action
             if new_score < alpha:
                 return new_score, action
@@ -261,7 +266,43 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.expectimaxsearch(gameState, 0, self.depth)[1]
+
+    def expectimaxsearch(self, game_state, agent_index, depth):
+        if depth == 0 or game_state.isWin() or game_state.isLose():
+            ret = self.evaluationFunction(game_state), Directions.STOP
+        elif agent_index == 0:
+            ret = self.maximizer(game_state, agent_index, depth)
+        else:
+            ret = self.expectation(game_state, agent_index, depth)
+        return ret
+
+    def maximizer(self, game_state, agent_index, depth):
+        actions = game_state.getLegalActions(agent_index)
+        if agent_index == game_state.getNumAgents() - 1:
+            next_agent, next_depth = 0, depth - 1
+        else:
+            next_agent, next_depth = agent_index + 1, depth
+        max_score, max_action = -1e9, Directions.STOP
+        for action in actions:
+            successor_game_state = game_state.generateSuccessor(agent_index, action)
+            new_score = self.expectimaxsearch(successor_game_state, next_agent, next_depth)[0]
+            if new_score > max_score:
+                max_score, max_action = new_score, action
+        return max_score, max_action
+
+    def expectation(self, game_state, agent_index, depth):
+        actions = game_state.getLegalActions(agent_index)
+        if agent_index == game_state.getNumAgents() - 1:
+            next_agent, next_depth = 0, depth - 1
+        else:
+            next_agent, next_depth = agent_index + 1, depth
+        exp_score, exp_action = 0, Directions.STOP
+        for action in actions:
+            successor_game_state = game_state.generateSuccessor(agent_index, action)
+            exp_score += self.expectimaxsearch(successor_game_state, next_agent, next_depth)[0]
+        exp_score /= len(actions)
+        return exp_score, exp_action # exp_action is never used!
 
 def betterEvaluationFunction(currentGameState):
     """
