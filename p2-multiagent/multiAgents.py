@@ -300,15 +300,47 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         exp_score /= len(actions)
         return exp_score, exp_action # exp_action is never used!
 
-def betterEvaluationFunction(currentGameState):
+def betterEvaluationFunction(current_game_state):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION:
+    The heuristic funtion is simple, i.e., manhattanDistance.
+    I take nearest ghost, nearest food dots, current score, and scared time
+    into account. Since the nearer to a ghost the worse, the nearer to a
+    food dot the better. I put the former in numerator, and the later in
+    denominator with minus.
+    To avoid divided by 0, +1 is added. And if the scared time is not zero,
+    this distance is set to -10 to omit ghosts' action for a while. Besides,
+    The other numbers are added by some experiments.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    pacman_pos = current_game_state.getPacmanPosition()
+    food = current_game_state.getFood()
+    foods = food.asList()
+    ghost_states = current_game_state.getGhostStates()
+    scared_times = [ghost_state.scaredTimer for ghost_state in ghost_states]
+
+    nearest_ghost_dis = 1e9
+    for ghost_state in ghost_states:
+        ghost_x, ghost_y = ghost_state.getPosition()
+        ghost_x = int(ghost_x)
+        ghost_y = int(ghost_y)
+        if ghost_state.scaredTimer == 0:
+            nearest_ghost_dis = min(nearest_ghost_dis,\
+                                    manhattanDistance((ghost_x, ghost_y),\
+                                    pacman_pos))
+        else:
+            nearest_ghost_dis = -10
+    nearest_food_dis = 1e9
+    for food in foods:
+        nearest_food_dis = min(nearest_food_dis,\
+                               manhattanDistance(food, pacman_pos))
+    if not foods:
+        nearest_food_dis = 0
+    return current_game_state.getScore()-7/(nearest_ghost_dis+1)\
+           -nearest_food_dis/3
 
 # Abbreviation
 better = betterEvaluationFunction
