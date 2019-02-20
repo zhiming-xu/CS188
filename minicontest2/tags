@@ -1,0 +1,461 @@
+Actions	game.py	/^class Actions:/
+Agent	game.py	/^class Agent:/
+AgentFactory	captureAgents.py	/^class AgentFactory:/
+AgentRules	capture.py	/^class AgentRules:/
+AgentState	game.py	/^class AgentState:/
+CaptureAgent	captureAgents.py	/^class CaptureAgent(/
+CaptureRules	capture.py	/^class CaptureRules:/
+Configuration	game.py	/^class Configuration:/
+Counter	util.py	/^class Counter(/
+DefensiveReflexAgent	baselineTeam.py	/^class DefensiveReflexAgent(/
+Directions	game.py	/^class Directions:/
+DistanceCalculator	distanceCalculator.py	/^class DistanceCalculator:/
+Distancer	distanceCalculator.py	/^class Distancer:/
+DummyAgent	myTeam.py	/^class DummyAgent(/
+FirstPersonPacmanGraphics	captureGraphicsDisplay.py	/^class FirstPersonPacmanGraphics(/
+FirstPersonPacmanGraphics	graphicsDisplay.py	/^class FirstPersonPacmanGraphics(/
+FixedRandom	util.py	/^class FixedRandom:/
+Game	game.py	/^class Game:/
+GameState	capture.py	/^class GameState:/
+GameStateData	game.py	/^class GameStateData:/
+Grid	game.py	/^class Grid:/
+InfoPane	captureGraphicsDisplay.py	/^class InfoPane:/
+InfoPane	graphicsDisplay.py	/^class InfoPane:/
+KeyboardAgent	keyboardAgents.py	/^class KeyboardAgent(/
+KeyboardAgent2	keyboardAgents.py	/^class KeyboardAgent2(/
+Layout	layout.py	/^class Layout:/
+Maze	mazeGenerator.py	/^class Maze:/
+NullGraphics	textDisplay.py	/^class NullGraphics:/
+OffensiveReflexAgent	baselineTeam.py	/^class OffensiveReflexAgent(/
+PacmanGraphics	captureGraphicsDisplay.py	/^class PacmanGraphics:/
+PacmanGraphics	graphicsDisplay.py	/^class PacmanGraphics:/
+PacmanGraphics	textDisplay.py	/^class PacmanGraphics:/
+PriorityQueue	util.py	/^class PriorityQueue:/
+PriorityQueueWithFunction	util.py	/^class PriorityQueueWithFunction(/
+Queue	util.py	/^class Queue:/
+RandomAgent	captureAgents.py	/^class RandomAgent(/
+ReflexCaptureAgent	baselineTeam.py	/^class ReflexCaptureAgent(/
+Stack	util.py	/^class Stack:/
+TimeoutAgent	captureAgents.py	/^class TimeoutAgent(/
+TimeoutFunction	util.py	/^class TimeoutFunction:/
+TimeoutFunctionException	util.py	/^class TimeoutFunctionException(/
+WritableNull	util.py	/^class WritableNull:/
+__add__	util.py	/^    def __add__(/
+__call__	util.py	/^    def __call__(/
+__eq__	capture.py	/^  def __eq__(/
+__eq__	game.py	/^    def __eq__(/
+__eq__	game.py	/^    def __eq__(/
+__eq__	game.py	/^    def __eq__(/
+__eq__	game.py	/^    def __eq__(/
+__getitem__	game.py	/^    def __getitem__(/
+__getitem__	util.py	/^    def __getitem__(/
+__hash__	capture.py	/^  def __hash__(/
+__hash__	game.py	/^    def __hash__(/
+__hash__	game.py	/^    def __hash__(/
+__hash__	game.py	/^    def __hash__(/
+__hash__	game.py	/^    def __hash__(/
+__init__	capture.py	/^  def __init__(/
+__init__	capture.py	/^  def __init__(/
+__init__	captureAgents.py	/^  def __init__(/
+__init__	captureAgents.py	/^  def __init__(/
+__init__	captureAgents.py	/^  def __init__(/
+__init__	captureAgents.py	/^  def __init__(/
+__init__	captureGraphicsDisplay.py	/^  def __init__(/
+__init__	captureGraphicsDisplay.py	/^  def __init__(/
+__init__	captureGraphicsDisplay.py	/^  def __init__(/
+__init__	distanceCalculator.py	/^  def __init__(/
+__init__	distanceCalculator.py	/^  def __init__(/
+__init__	game.py	/^    def __init__(/
+__init__	game.py	/^    def __init__(/
+__init__	game.py	/^    def __init__(/
+__init__	game.py	/^    def __init__(/
+__init__	game.py	/^    def __init__(/
+__init__	game.py	/^    def __init__(/
+__init__	graphicsDisplay.py	/^    def __init__(/
+__init__	graphicsDisplay.py	/^    def __init__(/
+__init__	graphicsDisplay.py	/^    def __init__(/
+__init__	keyboardAgents.py	/^    def __init__(/
+__init__	layout.py	/^    def __init__(/
+__init__	mazeGenerator.py	/^  def __init__(/
+__init__	textDisplay.py	/^    def __init__(/
+__init__	util.py	/^    def  __init__(/
+__init__	util.py	/^    def  __init__(/
+__init__	util.py	/^    def __init__(/
+__init__	util.py	/^    def __init__(/
+__init__	util.py	/^    def __init__(/
+__init__	util.py	/^    def __init__(/
+__mul__	util.py	/^    def __mul__(/
+__radd__	util.py	/^    def __radd__(/
+__setitem__	game.py	/^    def __setitem__(/
+__str__	capture.py	/^  def __str__(/
+__str__	game.py	/^    def __str__(/
+__str__	game.py	/^    def __str__(/
+__str__	game.py	/^    def __str__(/
+__str__	game.py	/^    def __str__(/
+__str__	layout.py	/^    def __str__(/
+__str__	mazeGenerator.py	/^  def __str__(/
+__sub__	util.py	/^    def __sub__(/
+_adjust_coords	graphicsUtils.py	/^def _adjust_coords(/
+_agentCrash	game.py	/^    def _agentCrash(/
+_blueScoreString	captureGraphicsDisplay.py	/^  def _blueScoreString(/
+_cellIndexToPosition	game.py	/^    def _cellIndexToPosition(/
+_clear_keys	graphicsUtils.py	/^def _clear_keys(/
+_ctrl_leftclick	graphicsUtils.py	/^def _ctrl_leftclick(/
+_destroy_window	graphicsUtils.py	/^def _destroy_window(/
+_foodWallStr	game.py	/^    def _foodWallStr(/
+_ghostStr	game.py	/^    def _ghostStr(/
+_infoString	captureGraphicsDisplay.py	/^  def _infoString(/
+_keypress	graphicsUtils.py	/^def _keypress(/
+_keyrelease	graphicsUtils.py	/^def _keyrelease(/
+_leftclick	graphicsUtils.py	/^def _leftclick(/
+_pacStr	game.py	/^    def _pacStr(/
+_redScoreString	captureGraphicsDisplay.py	/^  def _redScoreString(/
+_rightclick	graphicsUtils.py	/^def _rightclick(/
+_unpackBits	game.py	/^    def _unpackBits(/
+_unpackInt	game.py	/^    def _unpackInt(/
+add	captureGraphicsDisplay.py	/^def add(/
+add	graphicsDisplay.py	/^def add(/
+addFood	captureGraphicsDisplay.py	/^  def addFood(/
+add_pacman_stuff	mazeGenerator.py	/^def add_pacman_stuff(/
+add_wall	mazeGenerator.py	/^  def add_wall(/
+agentCrash	capture.py	/^  def agentCrash(/
+allGood	capture.py	/^    def allGood(/
+animatePacman	captureGraphicsDisplay.py	/^  def animatePacman(/
+animatePacman	graphicsDisplay.py	/^    def animatePacman(/
+applyAction	capture.py	/^  def applyAction(/
+argMax	util.py	/^    def argMax(/
+arrayInvert	util.py	/^def arrayInvert(/
+asList	game.py	/^    def asList(/
+baselineTeam	baselineTeam.py	1
+begin_graphics	graphicsUtils.py	/^def begin_graphics(/
+capture	capture.py	1
+captureAgents	captureAgents.py	1
+captureGraphicsDisplay	captureGraphicsDisplay.py	1
+changeColor	graphicsUtils.py	/^def changeColor(/
+changeText	graphicsUtils.py	/^def changeText(/
+checkDeath	capture.py	/^  def checkDeath(/
+checkNullDisplay	graphicsDisplay.py	/^    def checkNullDisplay(/
+checkNullDisplay	textDisplay.py	/^    def checkNullDisplay(/
+chooseAction	baselineTeam.py	/^  def chooseAction(/
+chooseAction	captureAgents.py	/^  def chooseAction(/
+chooseAction	myTeam.py	/^  def chooseAction(/
+chooseFromDistribution	util.py	/^def chooseFromDistribution(/
+circle	graphicsUtils.py	/^def circle(/
+clearDebug	captureGraphicsDisplay.py	/^  def clearDebug(/
+clearExpandedCells	captureGraphicsDisplay.py	/^  def clearExpandedCells(/
+clearExpandedCells	graphicsDisplay.py	/^    def clearExpandedCells(/
+clearIcon	captureGraphicsDisplay.py	/^  def clearIcon(/
+clearIcon	graphicsDisplay.py	/^    def clearIcon(/
+clearMessage	captureGraphicsDisplay.py	/^  def clearMessage(/
+clearMessage	graphicsDisplay.py	/^    def clearMessage(/
+clear_screen	graphicsUtils.py	/^def clear_screen(/
+colorToVector	graphicsUtils.py	/^def colorToVector(/
+computeDistances	distanceCalculator.py	/^def computeDistances(/
+consume	capture.py	/^  def consume(/
+copy	game.py	/^    def copy(/
+copy	game.py	/^    def copy(/
+copy	util.py	/^    def copy(/
+copyAgentStates	game.py	/^    def copyAgentStates(/
+copy_grid	mazeGenerator.py	/^def copy_grid(/
+count	game.py	/^    def count(/
+createTeam	baselineTeam.py	/^def createTeam(/
+createTeam	myTeam.py	/^def createTeam(/
+debugClear	captureAgents.py	/^  def debugClear(/
+debugDraw	captureAgents.py	/^  def debugDraw(/
+debugDraw	captureGraphicsDisplay.py	/^  def debugDraw(/
+decrementTimer	capture.py	/^  def decrementTimer(/
+deepCopy	capture.py	/^  def deepCopy(/
+deepCopy	game.py	/^    def deepCopy(/
+deepCopy	game.py	/^    def deepCopy(/
+deepCopy	layout.py	/^    def deepCopy(/
+default	capture.py	/^def default(/
+directionToVector	game.py	/^    def directionToVector(/
+distanceCalculator	distanceCalculator.py	1
+divideAll	util.py	/^    def divideAll(/
+draw	textDisplay.py	/^    def draw(/
+draw	textDisplay.py	/^    def draw(/
+drawAgentObjects	captureGraphicsDisplay.py	/^  def drawAgentObjects(/
+drawAgentObjects	graphicsDisplay.py	/^    def drawAgentObjects(/
+drawCapsules	captureGraphicsDisplay.py	/^  def drawCapsules(/
+drawCapsules	graphicsDisplay.py	/^    def drawCapsules(/
+drawDistributions	captureGraphicsDisplay.py	/^  def drawDistributions(/
+drawDistributions	graphicsDisplay.py	/^    def drawDistributions(/
+drawExpandedCells	captureGraphicsDisplay.py	/^  def drawExpandedCells(/
+drawExpandedCells	graphicsDisplay.py	/^    def drawExpandedCells(/
+drawFood	captureGraphicsDisplay.py	/^  def drawFood(/
+drawFood	graphicsDisplay.py	/^    def drawFood(/
+drawGhost	captureGraphicsDisplay.py	/^  def drawGhost(/
+drawGhost	captureGraphicsDisplay.py	/^  def drawGhost(/
+drawGhost	graphicsDisplay.py	/^    def drawGhost(/
+drawGhost	graphicsDisplay.py	/^    def drawGhost(/
+drawPacman	captureGraphicsDisplay.py	/^  def drawPacman(/
+drawPacman	captureGraphicsDisplay.py	/^  def drawPacman(/
+drawPacman	graphicsDisplay.py	/^    def drawPacman(/
+drawPacman	graphicsDisplay.py	/^    def drawPacman(/
+drawPane	captureGraphicsDisplay.py	/^  def drawPane(/
+drawPane	graphicsDisplay.py	/^    def drawPane(/
+drawStaticObjects	captureGraphicsDisplay.py	/^  def drawStaticObjects(/
+drawStaticObjects	graphicsDisplay.py	/^    def drawStaticObjects(/
+drawWalls	captureGraphicsDisplay.py	/^  def drawWalls(/
+drawWalls	graphicsDisplay.py	/^    def drawWalls(/
+drawWarning	captureGraphicsDisplay.py	/^  def drawWarning(/
+drawWarning	graphicsDisplay.py	/^    def drawWarning(/
+draw_background	graphicsUtils.py	/^def draw_background(/
+dumpFoodFromDeath	capture.py	/^  def dumpFoodFromDeath(/
+edit	graphicsUtils.py	/^def edit(/
+end_graphics	graphicsUtils.py	/^def end_graphics(/
+evaluate	baselineTeam.py	/^  def evaluate(/
+filterForAllowedActions	capture.py	/^  def filterForAllowedActions(/
+final	captureAgents.py	/^  def final(/
+finish	captureGraphicsDisplay.py	/^  def finish(/
+finish	graphicsDisplay.py	/^    def finish(/
+finish	textDisplay.py	/^    def finish(/
+finish	textDisplay.py	/^    def finish(/
+flipCoin	util.py	/^def flipCoin(/
+formatColor	graphicsUtils.py	/^def formatColor(/
+game	game.py	1
+genSuccessors	capture.py	/^    def genSuccessors(/
+generateMaze	mazeGenerator.py	/^def generateMaze(/
+generateSuccessor	capture.py	/^  def generateSuccessor(/
+generateSuccessor	game.py	/^    def generateSuccessor(/
+getAction	captureAgents.py	/^  def getAction(/
+getAction	captureAgents.py	/^  def getAction(/
+getAction	captureAgents.py	/^  def getAction(/
+getAction	game.py	/^    def getAction(/
+getAction	keyboardAgents.py	/^    def getAction(/
+getAgent	captureAgents.py	/^  def getAgent(/
+getAgentDistances	capture.py	/^  def getAgentDistances(/
+getAgentPosition	capture.py	/^  def getAgentPosition(/
+getAgentState	capture.py	/^  def getAgentState(/
+getBlueCapsules	capture.py	/^  def getBlueCapsules(/
+getBlueFood	capture.py	/^  def getBlueFood(/
+getBlueTeamIndices	capture.py	/^  def getBlueTeamIndices(/
+getCapsules	capture.py	/^  def getCapsules(/
+getCapsules	captureAgents.py	/^  def getCapsules(/
+getCapsulesYouAreDefending	captureAgents.py	/^  def getCapsulesYouAreDefending(/
+getCurrentObservation	captureAgents.py	/^  def getCurrentObservation(/
+getDirection	captureGraphicsDisplay.py	/^  def getDirection(/
+getDirection	game.py	/^    def getDirection(/
+getDirection	game.py	/^    def getDirection(/
+getDirection	graphicsDisplay.py	/^    def getDirection(/
+getDistance	distanceCalculator.py	/^  def getDistance(/
+getDistanceOnGrid	distanceCalculator.py	/^  def getDistanceOnGrid(/
+getDistanceOnGrid	distanceCalculator.py	/^def getDistanceOnGrid(/
+getEndpoints	captureGraphicsDisplay.py	/^  def getEndpoints(/
+getEndpoints	graphicsDisplay.py	/^    def getEndpoints(/
+getFeatures	baselineTeam.py	/^  def getFeatures(/
+getFeatures	baselineTeam.py	/^  def getFeatures(/
+getFeatures	baselineTeam.py	/^  def getFeatures(/
+getFood	captureAgents.py	/^  def getFood(/
+getFoodYouAreDefending	captureAgents.py	/^  def getFoodYouAreDefending(/
+getFurthestCorner	layout.py	/^    def getFurthestCorner(/
+getGhostColor	captureGraphicsDisplay.py	/^  def getGhostColor(/
+getGhostColor	captureGraphicsDisplay.py	/^  def getGhostColor(/
+getGhostColor	graphicsDisplay.py	/^    def getGhostColor(/
+getGhostColor	graphicsDisplay.py	/^    def getGhostColor(/
+getGrids1D	distanceCalculator.py	/^def getGrids1D(/
+getGrids2D	distanceCalculator.py	/^def getGrids2D(/
+getInitialAgentPosition	capture.py	/^  def getInitialAgentPosition(/
+getLayout	layout.py	/^def getLayout(/
+getLegalActions	capture.py	/^  def getLegalActions(/
+getLegalActions	capture.py	/^  def getLegalActions(/
+getLegalNeighbors	game.py	/^    def getLegalNeighbors(/
+getMaxStartupTime	capture.py	/^  def getMaxStartupTime(/
+getMaxTimeWarnings	capture.py	/^  def getMaxTimeWarnings(/
+getMaxTotalTime	capture.py	/^  def getMaxTotalTime(/
+getMazeDistance	captureAgents.py	/^  def getMazeDistance(/
+getMazeDistances	distanceCalculator.py	/^  def getMazeDistances(/
+getMove	keyboardAgents.py	/^    def getMove(/
+getMove	keyboardAgents.py	/^    def getMove(/
+getMoveTimeout	capture.py	/^  def getMoveTimeout(/
+getMoveWarningTime	capture.py	/^  def getMoveWarningTime(/
+getNumAgents	capture.py	/^  def getNumAgents(/
+getNumGhosts	layout.py	/^    def getNumGhosts(/
+getOpponents	captureAgents.py	/^  def getOpponents(/
+getPosition	captureGraphicsDisplay.py	/^  def getPosition(/
+getPosition	captureGraphicsDisplay.py	/^  def getPosition(/
+getPosition	game.py	/^    def getPosition(/
+getPosition	game.py	/^    def getPosition(/
+getPosition	graphicsDisplay.py	/^    def getPosition(/
+getPosition	graphicsDisplay.py	/^    def getPosition(/
+getPossibleActions	game.py	/^    def getPossibleActions(/
+getPreviousObservation	captureAgents.py	/^  def getPreviousObservation(/
+getProbability	util.py	/^def getProbability(/
+getProgress	capture.py	/^  def getProgress(/
+getProgress	game.py	/^    def getProgress(/
+getRandomCorner	layout.py	/^    def getRandomCorner(/
+getRandomLegalPosition	layout.py	/^    def getRandomLegalPosition(/
+getRedCapsules	capture.py	/^  def getRedCapsules(/
+getRedFood	capture.py	/^  def getRedFood(/
+getRedTeamIndices	capture.py	/^  def getRedTeamIndices(/
+getScore	capture.py	/^  def getScore(/
+getScore	captureAgents.py	/^  def getScore(/
+getSuccessor	baselineTeam.py	/^  def getSuccessor(/
+getSuccessor	game.py	/^    def getSuccessor(/
+getTeam	captureAgents.py	/^  def getTeam(/
+getWalls	capture.py	/^  def getWalls(/
+getWeights	baselineTeam.py	/^  def getWeights(/
+getWeights	baselineTeam.py	/^  def getWeights(/
+getWeights	baselineTeam.py	/^  def getWeights(/
+graphicsDisplay	graphicsDisplay.py	1
+graphicsUtils	graphicsUtils.py	1
+halfGrid	capture.py	/^def halfGrid(/
+halfList	capture.py	/^def halfList(/
+handle_timeout	util.py	/^    def handle_timeout(/
+hasFood	capture.py	/^  def hasFood(/
+hasWall	capture.py	/^  def hasWall(/
+image	graphicsUtils.py	/^def image(/
+incrementAll	util.py	/^    def incrementAll(/
+initialize	capture.py	/^  def initialize(/
+initialize	captureGraphicsDisplay.py	/^  def initialize(/
+initialize	captureGraphicsDisplay.py	/^  def initialize(/
+initialize	game.py	/^    def initialize(/
+initialize	graphicsDisplay.py	/^    def initialize(/
+initialize	graphicsDisplay.py	/^    def initialize(/
+initialize	textDisplay.py	/^    def initialize(/
+initialize	textDisplay.py	/^    def initialize(/
+initializeGhostDistances	captureGraphicsDisplay.py	/^  def initializeGhostDistances(/
+initializeGhostDistances	graphicsDisplay.py	/^    def initializeGhostDistances(/
+initializeVisibilityMatrix	layout.py	/^    def initializeVisibilityMatrix(/
+isEmpty	util.py	/^    def isEmpty(/
+isEmpty	util.py	/^    def isEmpty(/
+isEmpty	util.py	/^    def isEmpty(/
+isInt	distanceCalculator.py	/^def isInt(/
+isInteger	game.py	/^    def isInteger(/
+isOnRedTeam	capture.py	/^  def isOnRedTeam(/
+isOver	capture.py	/^  def isOver(/
+isReadyForMazeDistance	distanceCalculator.py	/^  def isReadyForMazeDistance(/
+isRed	capture.py	/^  def isRed(/
+isVisibleFrom	layout.py	/^    def isVisibleFrom(/
+isWall	captureGraphicsDisplay.py	/^  def isWall(/
+isWall	graphicsDisplay.py	/^    def isWall(/
+isWall	layout.py	/^    def isWall(/
+keyboardAgents	keyboardAgents.py	1
+keys_pressed	graphicsUtils.py	/^def keys_pressed(/
+keys_waiting	graphicsUtils.py	/^def keys_waiting(/
+layout	layout.py	1
+line	graphicsUtils.py	/^def line(/
+loadAgents	capture.py	/^def loadAgents(/
+lookAhead	captureGraphicsDisplay.py	/^  def lookAhead(/
+lookAhead	graphicsDisplay.py	/^    def lookAhead(/
+lookup	util.py	/^def lookup(/
+main	ptags.py	/^def main(/
+make	mazeGenerator.py	/^def make(/
+makeObservation	capture.py	/^  def makeObservation(/
+make_window	captureGraphicsDisplay.py	/^  def make_window(/
+make_window	graphicsDisplay.py	/^    def make_window(/
+make_with_prison	mazeGenerator.py	/^def make_with_prison(/
+manhattanDistance	distanceCalculator.py	/^def manhattanDistance(/
+manhattanDistance	util.py	/^def manhattanDistance(/
+matrixAsList	util.py	/^def matrixAsList(/
+mazeGenerator	mazeGenerator.py	1
+moveCircle	graphicsUtils.py	/^def moveCircle(/
+moveEyes	captureGraphicsDisplay.py	/^  def moveEyes(/
+moveEyes	graphicsDisplay.py	/^    def moveEyes(/
+moveGhost	captureGraphicsDisplay.py	/^  def moveGhost(/
+moveGhost	graphicsDisplay.py	/^    def moveGhost(/
+movePacman	captureGraphicsDisplay.py	/^  def movePacman(/
+movePacman	graphicsDisplay.py	/^    def movePacman(/
+move_by	graphicsUtils.py	/^def move_by(/
+move_to	graphicsUtils.py	/^def move_to(/
+mute	game.py	/^    def mute(/
+mutePrint	util.py	/^def mutePrint(/
+myTeam	myTeam.py	1
+nSample	util.py	/^def nSample(/
+nearestPoint	util.py	/^def nearestPoint(/
+newGame	capture.py	/^  def newGame(/
+normalize	util.py	/^    def normalize(/
+normalize	util.py	/^def normalize(/
+observationFunction	captureAgents.py	/^  def observationFunction(/
+onRightSide	capture.py	/^    def onRightSide(/
+packBits	game.py	/^    def packBits(/
+parseAgentArgs	capture.py	/^def parseAgentArgs(/
+pause	textDisplay.py	/^    def pause(/
+pause	textDisplay.py	/^    def pause(/
+pause	util.py	/^def pause(/
+placeGhost	capture.py	/^  def placeGhost(/
+polygon	graphicsUtils.py	/^def polygon(/
+pop	util.py	/^    def pop(/
+pop	util.py	/^    def pop(/
+pop	util.py	/^    def pop(/
+process	capture.py	/^  def process(/
+processLayoutChar	layout.py	/^    def processLayoutChar(/
+processLayoutText	layout.py	/^    def processLayoutText(/
+ptags	ptags.py	1
+push	util.py	/^    def push(/
+push	util.py	/^    def push(/
+push	util.py	/^    def push(/
+push	util.py	/^    def push(/
+raiseNotDefined	util.py	/^def raiseNotDefined(/
+randomLayout	capture.py	/^def randomLayout(/
+readCommand	capture.py	/^def readCommand(/
+reconstituteGrid	game.py	/^def reconstituteGrid(/
+refresh	graphicsUtils.py	/^def refresh(/
+registerInitialState	baselineTeam.py	/^  def registerInitialState(/
+registerInitialState	captureAgents.py	/^  def registerInitialState(/
+registerInitialState	game.py	/^    def registerInitialState(/
+registerInitialState	myTeam.py	/^  def registerInitialState(/
+registerTeam	captureAgents.py	/^  def registerTeam(/
+remap_arrows	graphicsUtils.py	/^def remap_arrows(/
+removeCapsule	captureGraphicsDisplay.py	/^  def removeCapsule(/
+removeCapsule	graphicsDisplay.py	/^    def removeCapsule(/
+removeFood	captureGraphicsDisplay.py	/^  def removeFood(/
+removeFood	graphicsDisplay.py	/^    def removeFood(/
+remove_from_screen	graphicsUtils.py	/^def remove_from_screen(/
+replayGame	capture.py	/^def replayGame(/
+reverseDirection	game.py	/^    def reverseDirection(/
+run	distanceCalculator.py	/^  def run(/
+run	game.py	/^    def run(/
+runGames	capture.py	/^def runGames(/
+sample	util.py	/^def sample(/
+sampleFromCounter	util.py	/^def sampleFromCounter(/
+saveFrame	captureGraphicsDisplay.py	/^def saveFrame(/
+saveFrame	graphicsDisplay.py	/^def saveFrame(/
+save_score	capture.py	/^def save_score(/
+setTeam	captureGraphicsDisplay.py	/^  def setTeam(/
+setTeam	graphicsDisplay.py	/^    def setTeam(/
+shallowCopy	game.py	/^    def shallowCopy(/
+sign	util.py	/^def sign(/
+sleep	graphicsUtils.py	/^def sleep(/
+sortedKeys	util.py	/^    def sortedKeys(/
+square	graphicsUtils.py	/^def square(/
+startGraphics	captureGraphicsDisplay.py	/^  def startGraphics(/
+startGraphics	graphicsDisplay.py	/^    def startGraphics(/
+swapImages	captureGraphicsDisplay.py	/^  def swapImages(/
+swapImages	graphicsDisplay.py	/^    def swapImages(/
+text	graphicsUtils.py	/^def text(/
+textDisplay	textDisplay.py	1
+toScreen	captureGraphicsDisplay.py	/^  def toScreen(/
+toScreen	graphicsDisplay.py	/^    def toScreen(/
+to_map	mazeGenerator.py	/^  def to_map(/
+to_screen	captureGraphicsDisplay.py	/^  def to_screen(/
+to_screen	graphicsDisplay.py	/^    def to_screen(/
+to_screen2	captureGraphicsDisplay.py	/^  def to_screen2(/
+to_screen2	graphicsDisplay.py	/^    def to_screen2(/
+totalCount	util.py	/^    def totalCount(/
+treat_file	ptags.py	/^def treat_file(/
+tryToLoad	layout.py	/^def tryToLoad(/
+unmute	game.py	/^    def unmute(/
+unmutePrint	util.py	/^def unmutePrint(/
+unpack	unpack.py	1
+update	captureGraphicsDisplay.py	/^  def update(/
+update	graphicsDisplay.py	/^    def update(/
+update	textDisplay.py	/^    def update(/
+update	textDisplay.py	/^    def update(/
+updateBlueText	captureGraphicsDisplay.py	/^  def updateBlueText(/
+updateDistributions	captureGraphicsDisplay.py	/^  def updateDistributions(/
+updateDistributions	graphicsDisplay.py	/^    def updateDistributions(/
+updateDistributions	textDisplay.py	/^    def updateDistributions(/
+updateGhostDistances	captureGraphicsDisplay.py	/^  def updateGhostDistances(/
+updateGhostDistances	graphicsDisplay.py	/^    def updateGhostDistances(/
+updateMessage	captureGraphicsDisplay.py	/^  def updateMessage(/
+updateMessage	graphicsDisplay.py	/^    def updateMessage(/
+updateRedText	captureGraphicsDisplay.py	/^  def updateRedText(/
+updateScore	captureGraphicsDisplay.py	/^  def updateScore(/
+updateScore	graphicsDisplay.py	/^    def updateScore(/
+util	util.py	1
+vectorToDirection	game.py	/^    def vectorToDirection(/
+wait_for_click	graphicsUtils.py	/^def wait_for_click(/
+wait_for_keys	graphicsUtils.py	/^def wait_for_keys(/
+write	util.py	/^    def write(/
+writePostscript	graphicsUtils.py	/^def writePostscript(/
