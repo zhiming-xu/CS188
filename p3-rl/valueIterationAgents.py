@@ -110,19 +110,18 @@ class ValueIterationAgent(ValueEstimationAgent):
         actions = self.mdp.getPossibleActions(state)
         if not actions:
             return None
-        else:
-            best_action, best_reward = '', -1e9
-            for action in actions:
-                state_prob = self.mdp.\
-                             getTransitionStatesAndProbs\
-                             (state, action)
-                reward = 0
-                for new_state, prob in state_prob:
-                    reward += prob * (self.mdp.getReward(state, action, new_state)+\
-                                     self.discount * self.getValue(new_state))
-                if reward > best_reward:
-                    best_reward = reward
-                    best_action = action
+        best_action, best_reward = '', -1e9
+        for action in actions:
+            state_prob = self.mdp.\
+                         getTransitionStatesAndProbs\
+                         (state, action)
+            reward = 0
+            for new_state, prob in state_prob:
+                reward += prob * (self.mdp.getReward(state, action, new_state)+\
+                                 self.discount * self.getValue(new_state))
+            if reward > best_reward:
+                best_reward = reward
+                best_action = action
         return best_action
 
     def getPolicy(self, state):
