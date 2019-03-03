@@ -32,7 +32,7 @@ from util import nearestPoint
 #################
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'OffensiveReflexAgent', second = 'DefensiveReflexAgent'):
+               first = 'OffensiveReflexAgent', second = 'OffensiveReflexAgent'):
   """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
@@ -57,39 +57,33 @@ class ReflexCaptureAgent(CaptureAgent):
   """
   A base class for reflex agents that chooses score-maximizing actions
   """
- 
+
   def registerInitialState(self, gameState):
     self.start = gameState.getAgentPosition(self.index)
     CaptureAgent.registerInitialState(self, gameState)
+    self.values = util.Counter()
+    self.epsilon = .4
+    self.alpha = .3
+    self.discount = .9
 
   def chooseAction(self, gameState):
     """
     Picks among the actions with the highest Q(s,a).
     """
-    actions = gameState.getLegalActions(self.index)
-
-    # You can profile your evaluation time by uncommenting these lines
-    # start = time.time()
-    values = [self.evaluate(gameState, a) for a in actions]
-    # print 'eval time for agent %d: %.4f' % (self.index, time.time() - start)
-
-    maxValue = max(values)
-    bestActions = [a for a, v in zip(actions, values) if v == maxValue]
-
-    foodLeft = len(self.getFood(gameState).asList())
-
-    if foodLeft <= 2:
-      bestDist = 9999
-      for action in actions:
-        successor = self.getSuccessor(gameState, action)
-        pos2 = successor.getAgentPosition(self.index)
-        dist = self.getMazeDistance(self.start, pos2)
-        if dist < bestDist:
-          bestAction = action
-          bestDist = dist
-      return bestAction
-    
-    return random.choice(bestActions)
+    # for this part, state is the observation of last state
+    # and nextState is the current state
+    old_state = self.getPreviousObservation()
+    if old_state:
+        max_new_q = self.computeValueFromQValues(gameState)
+        old_pos = old_state.getAgentState(self.index).getPosition()
+        cur_pos = gameState.getAgentState(self.index).getPosition()
+        action = (cur_pos[0]-old_pos[0], cur_pos[1]-old_pos[1])
+        old_value = self.getQValue(old_state, action)
+        reward = self.getScore(gameState) - self.getScore(old_state)
+        self.values[(old_pos, action)] = (1 - self.alpha) * old_value\
+                                       + self.alpha * (reward + \
+                                       self.discount * max_new_q)
+    return self.getQAction(gameState)
 
   def getSuccessor(self, gameState, action):
     """
@@ -103,14 +97,6 @@ class ReflexCaptureAgent(CaptureAgent):
     else:
       return successor
 
-  def evaluate(self, gameState, action):
-    """
-    Computes a linear combination of features and feature weights
-    """
-    features = self.getFeatures(gameState, action)
-    weights = self.getWeights(gameState, action)
-    return features * weights
-
   def getFeatures(self, gameState, action):
     """
     Returns a counter of features for the state
@@ -120,12 +106,48 @@ class ReflexCaptureAgent(CaptureAgent):
     features['successorScore'] = self.getScore(successor)
     return features
 
-  def getWeights(self, gameState, action):
-    """
-    Normally, weights do not depend on the gamestate.  They can be either
-    a counter or a dictionary.
-    """
-    return {'successorScore': 1.0}
+  def getQValue(self, state, action):
+      pos = state.getAgentState(self.index).getPosition()
+      return float(self.values[(pos, action)])
+
+  def computeValueFromQValues(self, state):
+      actions = state.getLegalActions(self.index)
+      if not actions:
+          return 0.0
+      best_action, best_reward = '', -1e9
+      for action in actions:
+          reward = self.getQValue(state, action)
+          if reward > best_reward:
+              best_reward = reward
+              best_action = action
+      return best_reward
+
+  def computeActionFromQValues(self, state):
+      actions = state.getLegalActions(self.index)
+      if not actions:
+          return None
+      best_action, best_reward = '', -1e9
+      for action in actions:
+          reward = self.getQValue(state, action)
+          if reward > best_reward:
+              best_reward = reward
+              best_action = action
+      return best_action
+  
+  def getQAction(self, state):
+      legalActions = state.getLegalActions(self.index)
+      action = None
+      if util.flipCoin(self.epsilon):
+           action = random.choice(legalActions)
+      else:
+          action = self.computeActionFromQValues(state)
+      return action
+
+  def getPolicy(self, state):
+      return state.computeActionFromQValues(state)
+
+  def getValue(self, state):
+      return self.computeValueFromQValues(state)
 
 PENDING_FOOD = 0
 
