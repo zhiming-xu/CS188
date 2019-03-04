@@ -62,19 +62,46 @@ class QLearningAgent(CaptureAgent):
     self.start = gameState.getAgentPosition(self.index)
     CaptureAgent.registerInitialState(self, gameState)
     weights = util.Counter()
-    weights['bias'] = 222.98
-    weights['#-of-opponents-1-step-away'] = -120.92
-    weights['eats-food'] = 288.65
-    weights['closest-food'] = -3.27
+    # for defensive
+    weights['oppo_in_dead_end'] = .2
+    weights['oppo_in_tunnel'] = .1
+    weights['oppo_in_crossing'] = -.1
+    weights['oppo_in_open_area'] = -.2
+    weights['surrounded_x'] = .1
+    weights['surrounded_y'] = .1
+    weights['surrounded_both'] = .2
+    weights['frontier_distance'] = -.1
+    weights['is_scared'] = -.1
+    weights['closest_distance_to_pacman'] = -.1
+    weights['average_distance_to_pacman'] = -.1
+    weights['min_distance_to_defend_food'] = -.1
+    weights['dot_loss'] = -.2
+    # for offensive
+    weights['closest_distance_to_ghost'] = .1
+    weights['average_distance_to_ghost'] = .1
+    weights['is_surrounded_by_ghost'] = -.1
+    weights['min_distance_to_food'] = -.1
+    weights['eat_food'] = .5
+    weights['carry_food'] = .1
+    weights['return_distance'] = -.1
+    # for both
+    weights['is_dead_end'] = -.1
+    weights['is_tunnel'] = -.1
+    weights['is_crossing'] = .1
+    weights['is_open_area'] = .2
+    weights['bias'] = .1
     self.weights = weights
     self.epsilon = .1
     self.alpha = .3
-    self.discount = .9
+    self.discount = .8
     self.pre_action = None
     self.is_dead_end = util.Counter()
     self.is_tunnel = util.Counter()
     self.is_crossing = util.Counter()
     self.is_open_area = util.Counter()
+    self.pre_score = 0
+    self.pre_features = util.Counter()
+    self.pre_value = 0
     self.pre_calculate(gameState)
 
   def pre_calculate(self, gameState):
@@ -108,23 +135,29 @@ class QLearningAgent(CaptureAgent):
     """
     # for this part, state is the observation of last state
     # and nextState is the current state
-    old_state = self.getPreviousObservation()
-    if old_state and self.pre_action:
-        max_new_q = self.computeValueFromQValues(gameState)
-        old_pos = old_state.getAgentState(self.index).getPosition()
-        cur_pos = gameState.getAgentState(self.index).getPosition()
-        old_value = self.getQValue(old_state, self.pre_action)
-        reward = self.getScore(gameState) - self.getScore(old_state)
-        new_value = reward + self.discount * max_new_q
-        diff = new_value - old_value
-        features = self.getFeatures(old_state, self.pre_action)
-        for feature in features:
-            self.weights[feature] += self.alpha * diff * features[feature]
-    
+    if self.getPreviousObservation() is not None:
+            self.update(gameState)
     self.pre_action = self.getQAction(gameState)
-    # print(self.pre_action)
-    # util.pause()
     return self.pre_action
+
+  def update(self, state):
+      pre_features = self.pre_features
+      pre_value = self.pre_value
+      diff = self.getReward(state) + self.discount * self.computeValueFromQValues(state)\
+             - pre_value
+      for feature in pre_features:
+          self.weights[feature] += self.alpha * diff * pre_features[feature]
+ 
+  def getReward(self, state):
+        pre_state = self.getPreviousObservation()
+        food_bonus = 5 * self.pre_features['eat_food']
+        score_bonus = 10 * (state.getScore() - pre_state.getScore())
+        pre_pos = pre_state.getAgentState(self.index).getPosition()
+        cur_pos = state.getAgentState(self.index).getPosition()
+        if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
+            score_bonus -= 30
+        reward = food_bonus + score_bonus
+        return reward
 
   def getSuccessor(self, gameState, action):
     """
@@ -160,22 +193,22 @@ class QLearningAgent(CaptureAgent):
                         in oppo_position]
     closest_distance = min(distance_to_oppo)
     avg_distance = sum(distance_to_oppo) / len(distance_to_oppo)
-    features['closest_distance_to_ghost'] = closest_distance
-    features['average_distance_to_ghost'] = avg_distance
+    features['closest_distance_to_ghost'] = closest_distance / 10.0
+    features['average_distance_to_ghost'] = avg_distance / 10.0
     num_of_ghost = 0
     for distance_oppo in distance_to_oppo:
         if distance_oppo < 3:
             num_of_ghost += 1
-    features['num_of_ghost_nearby'] = num_of_ghost
+    features['num_of_ghost_nearby'] = num_of_ghost / 2
     is_surrounded = oppo_position[0][0] <= next_x <= oppo_position[1][0] or\
                     oppo_position[0][1] <= next_y <= oppo_position[1][1]
     features['is_surrounded_by_ghost'] = is_surrounded
     # closest to food
     if food_list:
-        min_distance = min([self.getMazeDistance((next_x, next_y), food_list)\
+        min_distance = min([self.getMazeDistance((next_x, next_y), food)\
                             for food in food_list])
-        features['min_distance_to_food'] = min_distance
-    get_food = eat_food[next_x][next_y]
+        features['min_distance_to_food'] = min_distance / 10.0
+    get_food = eat_food[int(next_x)][int(next_y)]
     features['eat_food'] = get_food
     # carrying food
     last_role = old_state.getAgentState(self.index).isPacman
@@ -188,7 +221,7 @@ class QLearningAgent(CaptureAgent):
     # distance to frontier
     frontier_x = walls.width / 2
     return_dis = abs(frontier_x - next_x)
-    features['return_distance'] = return_dis
+    features['return_distance'] = return_dis / (walls.width / 2)
     # tunnel/crossing/dead end/open
     features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
     features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
@@ -242,7 +275,7 @@ class QLearningAgent(CaptureAgent):
     # distance to frontier
     frontier_x = walls.width / 2
     frontier_dis = abs(frontier_x - next_x)
-    features['frontier_distance'] = frontier_dis
+    features['frontier_distance'] = frontier_dis / (walls.width / 2)
     # self in tunnel/crossing/dead end/open
     features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
     features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
@@ -255,15 +288,15 @@ class QLearningAgent(CaptureAgent):
                         in oppo_position]
     closest_distance = min(distance_to_oppo)
     avg_distance = sum(distance_to_oppo) / len(distance_to_oppo)
-    features['closest_distance_to_pacman'] = closest_distance
-    features['average_distance_to_pacman'] = avg_distance
+    features['closest_distance_to_pacman'] = closest_distance / 10.0
+    features['average_distance_to_pacman'] = avg_distance / 10.0
     # calculate opponent distance to defending dots
     if food_list:
         min_distance = 1e9
         for oppo in oppo_position:
             min_distance = min(min_distance, min([self.getMazeDistance(oppo, food)\
                             for food in food_list]))
-        features['min_distance_to_defend_food'] = min_distance
+        features['min_distance_to_defend_food'] = min_distance / 10.0
     # get dot loss
     if old_state:
         if self.red:
@@ -278,21 +311,23 @@ class QLearningAgent(CaptureAgent):
 
   def getFeatures(self, gameState, action):
       if gameState.getAgentState(self.index).isPacman:
-          return self.getFeaturesPacman(gameState, action)
+          self.pre_features = self.getFeaturesPacman(gameState, action)
       else:
-          return self.getFeaturesGhost(gameState, action)
-  
+          self.pre_features = self.getFeaturesGhost(gameState, action)
+      return self.pre_features
+
   def getQValue(self, state, action):
       features = self.getFeatures(state, action)
       weights = self.weights
       print(weights)
+      features.normalize()
       return features * weights
 
   def computeValueFromQValues(self, state):
       actions = state.getLegalActions(self.index)
       if not actions:
           return 0.0
-      best_action, best_reward = '', -1e9
+      best_action, best_reward = Directions.STOP, float('-inf')
       for action in actions:
           reward = self.getQValue(state, action)
           if reward > best_reward:
@@ -304,7 +339,7 @@ class QLearningAgent(CaptureAgent):
       actions = state.getLegalActions(self.index)
       if not actions:
           return None
-      best_action, best_reward = '', float('-inf')
+      best_action, best_reward = Directions.STOP, float('-inf')
       for action in actions:
           reward = self.getQValue(state, action)
           if reward > best_reward:
@@ -322,95 +357,3 @@ class QLearningAgent(CaptureAgent):
       else:
           action = self.computeActionFromQValues(state)
       return action
-
-  def getPolicy(self, state):
-      return state.computeActionFromQValues(state)
-
-  def getValue(self, state):
-      return self.computeValueFromQValues(state)
-
-'''
-
-class OffensiveReflexAgent(ReflexCaptureAgent):
-  """
-  A reflex agent that seeks food. This is an agent
-  we give you to get an idea of what an offensive agent might look like,
-  but it is by no means the best or only way to build an offensive agent.
-  """
-  def getFeatures(self, gameState, action):
-    # add more features for evaluating
-    # initialize feature list
-    features = util.Counter()
-    successor = self.getSuccessor(gameState, action)
-    foods = self.getFood(successor)
-    grid_size = foods.height
-    foodList = foods.asList()
-    features['successorScore'] = -len(foodList)
-    # calculate score change
-    # retrieve the last state
-    global PENDING_FOOD
-    old_game_state = self.getPreviousObservation()
-    if PENDING_FOOD <= 3 and old_game_state:
-        old_score = -len(old_game_state.getBlueFood().asList() if gameState.isOnRedTeam\
-                         else old_game_state.getRedFood().asList())
-        PENDING_FOOD += max(features['successorScore'] - old_score, 0)
-    else:
-        PENDING_FOOD = 0
-    # Compute distance to the nearest ghost
-    opponents = gameState.getBlueTeamIndices()\
-               if gameState.isOnRedTeam\
-               else gameState.getRedTeamIndices()
-    
-    my_pos = successor.getAgentState(self.index).getPosition()
-    tmp_pos = [successor.getAgentState(opponent).getPosition() for opponent in opponents]
-    min_dis_to_oppo = min([self.getMazeDistance(my_pos, oppo) for oppo in tmp_pos])
-    features['distance_to_opponent'] = 1 / (min_dis_to_oppo + 1)
-    
-    # Compute distance to the nearest food
-
-    if len(foodList) > 0: # This should always be True,  but better safe than sorry
-      my_pos = successor.getAgentState(self.index).getPosition()
-      minDistance = min([self.getMazeDistance(my_pos, food) for food in foodList])
-      features['distanceToFood'] = minDistance
-    return features
-
-  def getWeights(self, gameState, action):
-      return 1
-
-class DefensiveReflexAgent(ReflexCaptureAgent):
-  """
-  A reflex agent that keeps its side Pacman-free. Again,
-  this is to give you an idea of what a defensive agent
-  could be like.  It is not the best or only way to make
-  such an agent.
-  """
-
-  def getFeatures(self, gameState, action):
-    features = util.Counter()
-    successor = self.getSuccessor(gameState, action)
-
-    myState = successor.getAgentState(self.index)
-    myPos = myState.getPosition()
-
-    # Computes whether we're on defense (1) or offense (0)
-    features['onDefense'] = 1
-    if myState.isPacman: features['onDefense'] = 0
-
-    # Computes distance to invaders we can see
-    enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-    invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
-    features['numInvaders'] = len(invaders)
-    if len(invaders) > 0:
-      dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
-      features['invaderDistance'] = min(dists)
-
-    if action == Directions.STOP: features['stop'] = 1
-    rev = Directions.REVERSE[gameState.getAgentState(self.index).configuration.direction]
-    if action == rev: features['reverse'] = 1
-
-    return features
-
-  def getWeights(self, gameState, action):
-    return {'numInvaders': -1000, 'onDefense': 100, 'invaderDistance': -10, 'stop': -100, 'reverse': -2}
-
-'''
