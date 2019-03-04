@@ -193,6 +193,7 @@ class ApproximateQAgent(PacmanQAgent):
         # if weights[(state, action)] == 0:
         value = 0.0
         for feature in features:
+            # print(feature, features[feature], weights[feature])
             value += features[feature] * weights[feature]
         return value
 
@@ -203,13 +204,13 @@ class ApproximateQAgent(PacmanQAgent):
         "*** YOUR CODE HERE ***"
         current_value = self.getQValue(state, action)
         features = self.featExtractor.getFeatures(state, action)
-        weights = self.getWeights()
+        # weights = self.getWeights()
         max_new_q = self.computeValueFromQValues(nextState)
         new_value = reward + self.discount * max_new_q
         diff = new_value - current_value
         for feature in features:
-            weights[feature] += self.alpha * diff * features[feature]
-
+            self.weights[feature] += self.alpha * diff * features[feature]
+    
     def final(self, state):
         "Called at the end of each game."
         # call the super-class final method
