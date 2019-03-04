@@ -63,17 +63,17 @@ class QLearningAgent(CaptureAgent):
     CaptureAgent.registerInitialState(self, gameState)
     weights = util.Counter()
     # for defensive
-    weights['oppo_in_dead_end'] = .2
-    weights['oppo_in_tunnel'] = .1
-    weights['oppo_in_crossing'] = -.1
-    weights['oppo_in_open_area'] = -.2
-    weights['surrounded_x'] = .1
-    weights['surrounded_y'] = .1
-    weights['surrounded_both'] = .2
+    weights['oppo_in_dead_end'] = .1
+    weights['oppo_in_tunnel'] = .05
+    weights['oppo_in_crossing'] = -.05
+    weights['oppo_in_open_area'] = -.1
+    weights['surrounded_x'] = .05
+    weights['surrounded_y'] = .05
+    weights['surrounded_both'] = .1
     weights['frontier_distance'] = -.1
     weights['is_scared'] = -.1
     weights['closest_distance_to_pacman'] = -.1
-    weights['average_distance_to_pacman'] = -.1
+    weights['average_distance_to_pacman'] = -.05
     weights['min_distance_to_defend_food'] = -.1
     weights['dot_loss'] = -.2
     # for offensive
@@ -81,19 +81,19 @@ class QLearningAgent(CaptureAgent):
     weights['average_distance_to_ghost'] = .1
     weights['is_surrounded_by_ghost'] = -.1
     weights['min_distance_to_food'] = -.1
-    weights['eat_food'] = .5
+    weights['eat_food'] = .2
     weights['carry_food'] = .1
     weights['return_distance'] = -.1
     # for both
     weights['is_dead_end'] = -.1
-    weights['is_tunnel'] = -.1
-    weights['is_crossing'] = .1
-    weights['is_open_area'] = .2
+    weights['is_tunnel'] = -.05
+    weights['is_crossing'] = .05
+    weights['is_open_area'] = .1
     weights['bias'] = .1
     self.weights = weights
-    self.epsilon = .1
-    self.alpha = .3
-    self.discount = .8
+    self.epsilon = .2
+    self.alpha = .1
+    self.discount = 1
     self.pre_action = None
     self.is_dead_end = util.Counter()
     self.is_tunnel = util.Counter()
@@ -119,7 +119,7 @@ class QLearningAgent(CaptureAgent):
                 if 0 <= next_x < width and 0 <= next_y < height\
                 and walls[next_x][next_y] is False:
                     count += 1
-            if count == 2:
+            if count <= 2:
                 self.is_dead_end[(i, j)] = 1
             elif count == 3:
                 self.is_tunnel[(i, j)] = 1
@@ -136,15 +136,17 @@ class QLearningAgent(CaptureAgent):
     # for this part, state is the observation of last state
     # and nextState is the current state
     if self.getPreviousObservation() is not None:
-            self.update(gameState)
+            self.update_value(gameState)
     self.pre_action = self.getQAction(gameState)
     return self.pre_action
 
-  def update(self, state):
+  def update_value(self, state):
       pre_features = self.pre_features
       pre_value = self.pre_value
       diff = self.getReward(state) + self.discount * self.computeValueFromQValues(state)\
              - pre_value
+      print('------------------------THIS IS DIFF---------------------------')
+      print(diff)
       for feature in pre_features:
           self.weights[feature] += self.alpha * diff * pre_features[feature]
  
@@ -155,7 +157,7 @@ class QLearningAgent(CaptureAgent):
         pre_pos = pre_state.getAgentState(self.index).getPosition()
         cur_pos = state.getAgentState(self.index).getPosition()
         if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
-            score_bonus -= 30
+            score_bonus -= 10
         reward = food_bonus + score_bonus
         return reward
 
@@ -213,6 +215,7 @@ class QLearningAgent(CaptureAgent):
     # carrying food
     last_role = old_state.getAgentState(self.index).isPacman
     cur_role = gameState.getAgentState(self.index).isPacman
+    print('----------last role----------', last_role, 'cur role', cur_role)
     if last_role ^ cur_role:
         self.carry_food = 0
     elif get_food:
@@ -319,9 +322,9 @@ class QLearningAgent(CaptureAgent):
   def getQValue(self, state, action):
       features = self.getFeatures(state, action)
       weights = self.weights
-      print(weights)
       features.normalize()
-      return features * weights
+      new_value = features * weights
+      return new_value
 
   def computeValueFromQValues(self, state):
       actions = state.getLegalActions(self.index)
@@ -345,8 +348,6 @@ class QLearningAgent(CaptureAgent):
           if reward > best_reward:
               best_reward = reward
               best_action = action
-      if best_action == '':
-          print(best_reward, reward)
       return best_action
   
   def getQAction(self, state):
