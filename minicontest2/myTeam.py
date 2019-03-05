@@ -93,7 +93,7 @@ class QLearningAgent(CaptureAgent):
     self.weights = weights
     self.epsilon = .2
     self.alpha = .1
-    self.discount = 1
+    self.discount = .9
     self.pre_action = None
     self.is_dead_end = util.Counter()
     self.is_tunnel = util.Counter()
@@ -102,6 +102,7 @@ class QLearningAgent(CaptureAgent):
     self.pre_score = 0
     self.pre_features = util.Counter()
     self.pre_value = 0
+    self.carry_food = 0
     self.pre_calculate(gameState)
 
   def pre_calculate(self, gameState):
@@ -172,8 +173,8 @@ class QLearningAgent(CaptureAgent):
       return successor.generateSuccessor(self.index, action)
     else:
       return successor
-
-# for offensive agent
+  
+  # for both offensive and defensive agent
   def getFeaturesPacman(self, gameState, action):
     # return a counter of features for this state
     successor = self.getSuccessor(gameState, action)
@@ -213,13 +214,13 @@ class QLearningAgent(CaptureAgent):
     get_food = eat_food[int(next_x)][int(next_y)]
     features['eat_food'] = get_food
     # carrying food
-    last_role = old_state.getAgentState(self.index).isPacman
-    cur_role = gameState.getAgentState(self.index).isPacman
-    print('----------last role----------', last_role, 'cur role', cur_role)
-    if last_role ^ cur_role:
-        self.carry_food = 0
-    elif get_food:
-        self.carry_food += 1
+    if old_state is not None:
+        last_role = old_state.getAgentState(self.index).isPacman
+        cur_role = gameState.getAgentState(self.index).isPacman
+        if last_role ^ cur_role:
+            self.carry_food = 0
+        elif get_food:
+            self.carry_food += 1
     features['carry_food'] = self.carry_food
     # distance to frontier
     frontier_x = walls.width / 2
@@ -230,25 +231,9 @@ class QLearningAgent(CaptureAgent):
     features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
     features['is_crossing'] = self.is_crossing[(next_x, next_y)]
     features['is_open_area'] = self.is_open_area[(next_x, next_y)]
-    # TODO: power capsules, scared time
-    return features
 
-# for defensive agent
-  def getFeaturesGhost(self, gameState, action):
-    # return a counter of feature for new state
-    successor = self.getSuccessor(gameState, action)
-    old_state = self.getPreviousObservation()
-    eat_food = self.getFood(successor)
-    defend_food = self.getFoodYouAreDefending(successor)
-    food_list = defend_food.asList()
-    opponents_index = self.getOpponents(successor)
-    oppo_position = [gameState.getAgentState(oppo).getPosition() for oppo\
-                     in opponents_index]
-    walls = successor.getWalls()
-    new_state = successor.getAgentState(self.index)
-    next_x, next_y = new_state.getPosition()
-    features = util.Counter()
-    features['bias'] = 1.0
+    # TODO: power capsules, scared time
+    #----------BELOW IS FOR DEFENSIVE----------#
     # opponent in tunnel/crossing/openarea
     features['oppo_in_dead_end'] = self.is_dead_end[(oppo_position[0])] or\
                                    self.is_dead_end[(oppo_position[1])]
@@ -261,20 +246,21 @@ class QLearningAgent(CaptureAgent):
     # opponent location relative to self
     teammate_index = (self.index + 2) % 4
     teammate_x, teammate_y = gameState.getAgentState(teammate_index).getPosition()
+    surrounded_x, surrounded_y = False, False
     for pos in oppo_position:
-        surrounded_x = (min(teammate_x, next_x) <= oppo_position[0][0] <=
+        surrounded_x |= (min(teammate_x, next_x) <= pos[0] <=
                        max(teammate_x, next_x) or
-                       min(teammate_x, next_x) <= oppo_position[1][0] <=
+                       min(teammate_x, next_x) <= pos[0] <=
                        max(teammate_x, next_x))
 
-        surrounded_y = (min(teammate_y, next_y) <= oppo_position[0][1] <=
+        surrounded_y |= (min(teammate_y, next_y) <= pos[1] <=
                        max(teammate_y, next_y) or
-                       min(teammate_y, next_y) <= oppo_position[1][1] <=
+                       min(teammate_y, next_y) <= pos[1] <=
                        max(teammate_y, next_y))
-        surrounded_both = surrounded_x and surrounded_y
-        features['surrounded_x'] = surrounded_x
-        features['surrounded_y'] = surrounded_y
-        features['surrounded_both'] = surrounded_both
+    surrounded_both = surrounded_x and surrounded_y
+    features['surrounded_x'] = surrounded_x
+    features['surrounded_y'] = surrounded_y
+    features['surrounded_both'] = surrounded_both
     # distance to frontier
     frontier_x = walls.width / 2
     frontier_dis = abs(frontier_x - next_x)
@@ -285,7 +271,7 @@ class QLearningAgent(CaptureAgent):
     features['is_crossing'] = self.is_crossing[(next_x, next_y)]
     features['is_open_area'] = self.is_open_area[(next_x, next_y)]
     # self is scared
-    features['is_scared'] = gameState.getAgentState(self.index).scaredTimer > 0
+    features['is_scared'] = successor.getAgentState(self.index).scaredTimer > 0
     # calculate distance to opponents
     distance_to_oppo = [self.getMazeDistance((next_x, next_y), oppo) for oppo\
                         in oppo_position]
@@ -313,10 +299,7 @@ class QLearningAgent(CaptureAgent):
     return features
 
   def getFeatures(self, gameState, action):
-      if gameState.getAgentState(self.index).isPacman:
-          self.pre_features = self.getFeaturesPacman(gameState, action)
-      else:
-          self.pre_features = self.getFeaturesGhost(gameState, action)
+      self.pre_features = self.getFeaturesPacman(gameState, action)
       return self.pre_features
 
   def getQValue(self, state, action):
@@ -324,6 +307,8 @@ class QLearningAgent(CaptureAgent):
       weights = self.weights
       features.normalize()
       new_value = features * weights
+      print('----------------features and weights--------------------:')
+      print(features, '\n', weights)
       return new_value
 
   def computeValueFromQValues(self, state):
@@ -336,6 +321,7 @@ class QLearningAgent(CaptureAgent):
           if reward > best_reward:
               best_reward = reward
               best_action = action
+      self.pre_value = best_reward
       return best_reward
 
   def computeActionFromQValues(self, state):

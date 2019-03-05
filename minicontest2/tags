@@ -8,7 +8,6 @@ CaptureRules	capture.py	/^class CaptureRules:/
 Configuration	game.py	/^class Configuration:/
 Counter	util.py	/^class Counter(/
 DefensiveReflexAgent	baselineTeam.py	/^class DefensiveReflexAgent(/
-DefensiveReflexAgent	myTeam.py	/^class DefensiveReflexAgent(/
 Directions	game.py	/^class Directions:/
 DistanceCalculator	distanceCalculator.py	/^class DistanceCalculator:/
 Distancer	distanceCalculator.py	/^class Distancer:/
@@ -27,16 +26,15 @@ Layout	layout.py	/^class Layout:/
 Maze	mazeGenerator.py	/^class Maze:/
 NullGraphics	textDisplay.py	/^class NullGraphics:/
 OffensiveReflexAgent	baselineTeam.py	/^class OffensiveReflexAgent(/
-OffensiveReflexAgent	myTeam.py	/^class OffensiveReflexAgent(/
 PacmanGraphics	captureGraphicsDisplay.py	/^class PacmanGraphics:/
 PacmanGraphics	graphicsDisplay.py	/^class PacmanGraphics:/
 PacmanGraphics	textDisplay.py	/^class PacmanGraphics:/
 PriorityQueue	util.py	/^class PriorityQueue:/
 PriorityQueueWithFunction	util.py	/^class PriorityQueueWithFunction(/
+QLearningAgent	myTeam.py	/^class QLearningAgent(/
 Queue	util.py	/^class Queue:/
 RandomAgent	captureAgents.py	/^class RandomAgent(/
 ReflexCaptureAgent	baselineTeam.py	/^class ReflexCaptureAgent(/
-ReflexCaptureAgent	myTeam.py	/^class ReflexCaptureAgent(/
 Stack	util.py	/^class Stack:/
 TimeoutAgent	captureAgents.py	/^class TimeoutAgent(/
 TimeoutFunction	util.py	/^class TimeoutFunction:/
@@ -209,6 +207,7 @@ dumpFoodFromDeath	capture.py	/^  def dumpFoodFromDeath(/
 edit	graphicsUtils.py	/^def edit(/
 end_graphics	graphicsUtils.py	/^def end_graphics(/
 evaluate	baselineTeam.py	/^  def evaluate(/
+features	features.py	1
 filterForAllowedActions	capture.py	/^  def filterForAllowedActions(/
 final	captureAgents.py	/^  def final(/
 finish	captureGraphicsDisplay.py	/^  def finish(/
@@ -250,9 +249,10 @@ getEndpoints	graphicsDisplay.py	/^    def getEndpoints(/
 getFeatures	baselineTeam.py	/^  def getFeatures(/
 getFeatures	baselineTeam.py	/^  def getFeatures(/
 getFeatures	baselineTeam.py	/^  def getFeatures(/
+getFeatures	features.py	/^def getFeatures(/
 getFeatures	myTeam.py	/^  def getFeatures(/
-getFeatures	myTeam.py	/^  def getFeatures(/
-getFeatures	myTeam.py	/^  def getFeatures(/
+getFeaturesDefensive	features.py	/^def getFeaturesDefensive(/
+getFeaturesPacman	myTeam.py	/^  def getFeaturesPacman(/
 getFood	captureAgents.py	/^  def getFood(/
 getFoodYouAreDefending	captureAgents.py	/^  def getFoodYouAreDefending(/
 getFurthestCorner	layout.py	/^    def getFurthestCorner(/
@@ -279,7 +279,6 @@ getMoveWarningTime	capture.py	/^  def getMoveWarningTime(/
 getNumAgents	capture.py	/^  def getNumAgents(/
 getNumGhosts	layout.py	/^    def getNumGhosts(/
 getOpponents	captureAgents.py	/^  def getOpponents(/
-getPolicy	myTeam.py	/^  def getPolicy(/
 getPosition	captureGraphicsDisplay.py	/^  def getPosition(/
 getPosition	captureGraphicsDisplay.py	/^  def getPosition(/
 getPosition	game.py	/^    def getPosition(/
@@ -298,19 +297,17 @@ getRandomLegalPosition	layout.py	/^    def getRandomLegalPosition(/
 getRedCapsules	capture.py	/^  def getRedCapsules(/
 getRedFood	capture.py	/^  def getRedFood(/
 getRedTeamIndices	capture.py	/^  def getRedTeamIndices(/
+getReward	myTeam.py	/^  def getReward(/
 getScore	capture.py	/^  def getScore(/
 getScore	captureAgents.py	/^  def getScore(/
 getSuccessor	baselineTeam.py	/^  def getSuccessor(/
 getSuccessor	game.py	/^    def getSuccessor(/
 getSuccessor	myTeam.py	/^  def getSuccessor(/
 getTeam	captureAgents.py	/^  def getTeam(/
-getValue	myTeam.py	/^  def getValue(/
 getWalls	capture.py	/^  def getWalls(/
 getWeights	baselineTeam.py	/^  def getWeights(/
 getWeights	baselineTeam.py	/^  def getWeights(/
 getWeights	baselineTeam.py	/^  def getWeights(/
-getWeights	myTeam.py	/^  def getWeights(/
-getWeights	myTeam.py	/^  def getWeights(/
 graphicsDisplay	graphicsDisplay.py	1
 graphicsUtils	graphicsUtils.py	1
 halfGrid	capture.py	/^def halfGrid(/
@@ -392,6 +389,7 @@ polygon	graphicsUtils.py	/^def polygon(/
 pop	util.py	/^    def pop(/
 pop	util.py	/^    def pop(/
 pop	util.py	/^    def pop(/
+pre_calculate	myTeam.py	/^  def pre_calculate(/
 process	capture.py	/^  def process(/
 processLayoutChar	layout.py	/^    def processLayoutChar(/
 processLayoutText	layout.py	/^    def processLayoutText(/
@@ -467,6 +465,7 @@ updateMessage	graphicsDisplay.py	/^    def updateMessage(/
 updateRedText	captureGraphicsDisplay.py	/^  def updateRedText(/
 updateScore	captureGraphicsDisplay.py	/^  def updateScore(/
 updateScore	graphicsDisplay.py	/^    def updateScore(/
+update_value	myTeam.py	/^  def update_value(/
 util	util.py	1
 vectorToDirection	game.py	/^    def vectorToDirection(/
 wait_for_click	graphicsUtils.py	/^def wait_for_click(/
