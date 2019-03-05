@@ -77,11 +77,10 @@ class QLearningAgent(CaptureAgent):
     weights['min_distance_to_defend_food'] = -.1
     weights['dot_loss'] = -.2
     # for offensive
-    weights['closest_distance_to_ghost'] = .1
+    weights['closest_distance_to_ghost'] = 10
     weights['average_distance_to_ghost'] = .1
     weights['is_surrounded_by_ghost'] = -.1
-    weights['min_distance_to_food'] = -.1
-    weights['eat_food'] = .2
+    weights['min_distance_to_food'] = -1
     weights['carry_food'] = .1
     weights['return_distance'] = -.1
     # for both
@@ -91,7 +90,7 @@ class QLearningAgent(CaptureAgent):
     weights['is_open_area'] = .1
     weights['bias'] = .1
     self.weights = weights
-    self.epsilon = .2
+    self.epsilon = .3
     self.alpha = .5
     self.discount = 1
     self.pre_action = None
@@ -139,6 +138,9 @@ class QLearningAgent(CaptureAgent):
     if self.getPreviousObservation() is not None:
             self.update_value(gameState)
     self.pre_action = self.getQAction(gameState)
+    print("-------------FEATURES AND WEIGHTS---------------")
+    for feature in self.pre_features:
+        print(feature, self.pre_features[feature], self.weights[feature])
     return self.pre_action
 
   def update_value(self, state):
@@ -153,13 +155,13 @@ class QLearningAgent(CaptureAgent):
  
   def getReward(self, state):
         pre_state = self.getPreviousObservation()
-        food_bonus = 5 * self.pre_features['eat_food']
-        score_bonus = 10 * (state.getScore() - pre_state.getScore())
-        oppo_bonus = 8 * self.pre_features['eat_opponent']
+        food_bonus = 20 * self.pre_features['eat_food']
+        score_bonus = 100 * (state.getScore() - pre_state.getScore())
+        oppo_bonus = 40 * self.pre_features['eat_opponent']
         pre_pos = pre_state.getAgentState(self.index).getPosition()
         cur_pos = state.getAgentState(self.index).getPosition()
         if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
-            score_bonus -= 10
+            score_bonus -= 100
         reward = food_bonus + score_bonus + oppo_bonus
         return reward
 
@@ -177,123 +179,61 @@ class QLearningAgent(CaptureAgent):
   
   # for both offensive and defensive agent
   def getFeaturesPacman(self, gameState, action):
-    # return a counter of features for this state
-    successor = self.getSuccessor(gameState, action)
-    old_state = self.getPreviousObservation()
-    eat_food = self.getFood(successor)
-    food_list = eat_food.asList()
-    defend_food = self.getFoodYouAreDefending(successor)
-    opponents_index = self.getOpponents(successor)
-    walls = successor.getWalls()
-    features = util.Counter()
-    features['bias'] = 1.0
-    # compute the location of pacman after the action
-    new_state = successor.getAgentState(self.index)
-    next_x, next_y = new_state.getPosition()
-    # calculate distance to opponents
-    oppo_position = [successor.getAgentState(oppo).getPosition() for oppo in\
-                     opponents_index]
-    distance_to_oppo = [self.getMazeDistance((next_x, next_y), oppo) for oppo\
-                        in oppo_position]
-    closest_distance = min(distance_to_oppo)
-    avg_distance = sum(distance_to_oppo) / len(distance_to_oppo)
-    features['closest_distance_to_ghost'] = closest_distance / 10.0
-    features['average_distance_to_ghost'] = avg_distance / 10.0
-    features['eat_opponent'] = (closest_distance == 0)
-    num_of_ghost = 0
-    for distance_oppo in distance_to_oppo:
-        if distance_oppo < 3:
-            num_of_ghost += 1
-    features['num_of_ghost_nearby'] = num_of_ghost / 2
-    is_surrounded = oppo_position[0][0] <= next_x <= oppo_position[1][0] or\
-                    oppo_position[0][1] <= next_y <= oppo_position[1][1]
-    features['is_surrounded_by_ghost'] = is_surrounded
-    # closest to food
-    if food_list:
-        min_distance = min([self.getMazeDistance((next_x, next_y), food)\
-                            for food in food_list])
-        features['min_distance_to_food'] = min_distance / 10.0
-    get_food = eat_food[int(next_x)][int(next_y)]
-    features['eat_food'] = get_food
-    # carrying food
-    if old_state is not None:
-        last_role = old_state.getAgentState(self.index).isPacman
-        cur_role = gameState.getAgentState(self.index).isPacman
-        if last_role ^ cur_role:
-            self.carry_food = 0
-        elif get_food:
-            self.carry_food += 1
-    features['carry_food'] = self.carry_food
-    # distance to frontier
-    frontier_x = walls.width / 2
-    return_dis = abs(frontier_x - next_x)
-    # features['return_distance'] = return_dis / (walls.width / 2)
-    # tunnel/crossing/dead end/open
-    features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
-    features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
-    features['is_crossing'] = self.is_crossing[(next_x, next_y)]
-    features['is_open_area'] = self.is_open_area[(next_x, next_y)]
+      # Initiate
+      features = util.Counter()
+      next_state = self.getSuccessor(gameState, action)
+      food_to_eat = self.getFood(next_state).asList()
+      opponent_index = self.getOpponents(next_state)
+      walls = next_state.getWalls()
+      features['bias'] = 1.0
+      new_agent_state = next_state.getAgentState(self.index)
+      next_x, next_y = new_agent_state.getPosition()
 
-    # TODO: power capsules, scared time
-    #----------BELOW IS FOR DEFENSIVE----------#
-    # opponent in tunnel/crossing/openarea
-    features['oppo_in_dead_end'] = self.is_dead_end[(oppo_position[0])] or\
-                                   self.is_dead_end[(oppo_position[1])]
-    features['oppo_in_tunnel'] = self.is_tunnel[(oppo_position[0])] or\
-                                 self.is_tunnel[(oppo_position[1])]
-    features['oppo_in_crossing'] = self.is_crossing[(oppo_position[0])] or\
-                                   self.is_crossing[(oppo_position[1])]
-    features['oppo_in_open_area'] = self.is_open_area[(oppo_position[0])] or\
-                                    self.is_open_area[(oppo_position[1])]
-    # opponent location relative to self
-    teammate_index = (self.index + 2) % 4
-    teammate_x, teammate_y = gameState.getAgentState(teammate_index).getPosition()
-    surrounded_x, surrounded_y = False, False
-    for pos in oppo_position:
-        surrounded_x |= (min(teammate_x, next_x) <= pos[0] <=
-                       max(teammate_x, next_x) or
-                       min(teammate_x, next_x) <= pos[0] <=
-                       max(teammate_x, next_x))
+      # Offensive / distance to closest dot
+      if food_to_eat:
+          min_distance = min([self.getMazeDistance((next_x, next_y), food)
+                              for food in food_to_eat])
+          features['min_distance_to_food'] = min_distance
 
-        surrounded_y |= (min(teammate_y, next_y) <= pos[1] <=
-                       max(teammate_y, next_y) or
-                       min(teammate_y, next_y) <= pos[1] <=
-                       max(teammate_y, next_y))
-    surrounded_both = surrounded_x and surrounded_y
-    features['surrounded_x'] = surrounded_x
-    features['surrounded_y'] = surrounded_y
-    features['surrounded_both'] = surrounded_both
-    # distance to frontier
-    frontier_x = walls.width / 2
-    frontier_dis = abs(frontier_x - next_x)
-    features['frontier_distance'] = frontier_dis / (walls.width / 2)
-    # self is scared
-    features['is_scared'] = successor.getAgentState(self.index).scaredTimer > 0
-    # calculate distance to opponents
-    distance_to_oppo = [self.getMazeDistance((next_x, next_y), oppo) for oppo\
-                        in oppo_position]
-    closest_distance = min(distance_to_oppo)
-    avg_distance = sum(distance_to_oppo) / len(distance_to_oppo)
-    features['closest_distance_to_pacman'] = closest_distance / 10.0
-    features['average_distance_to_pacman'] = avg_distance / 10.0
-    # calculate opponent distance to defending dots
-    if food_list:
-        min_distance = 1e9
-        for oppo in oppo_position:
-            min_distance = min(min_distance, min([self.getMazeDistance(oppo, food)\
-                            for food in food_list]))
-        features['min_distance_to_defend_food'] = min_distance / 10.0
-    # get dot loss
-    if old_state:
-        if self.red:
-            old_defending_food = old_state.getRedFood()
-        else:
-            old_defending_food = old_state.getBlueFood()
-        dot_loss = 0
-        for oppo in oppo_position:
-            dot_loss += old_defending_food[int(oppo[0])][int(oppo[1])]
-            features['dot_loss'] = dot_loss
-    return features
+      # Offensive / distance to closest ghost
+      min_distances = []
+      if next_state.getAgentState(self.index).isPacman:
+          for opponent in opponent_index:
+              if next_state.getAgentState(opponent).isPacman is False:
+                  opponent_pos = next_state.getAgentState(opponent).getPosition()
+                  min_distances.append(self.getMazeDistance((next_x, next_y), opponent_pos))
+          if min_distances:
+              features['closest_distance to ghost'] = min(min_distances)
+
+      if food_to_eat:
+          last_role = 
+
+      return features
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   def getFeatures(self, gameState, action):
       self.pre_features = self.getFeaturesPacman(gameState, action)
@@ -304,12 +244,6 @@ class QLearningAgent(CaptureAgent):
       weights = self.weights
       features.normalize()
       new_value = features * weights
-      if weights[weights.argMax()] >= 10:
-          print('--------------------WARNING! GROWING WEIGHTS--------------------------')
-          print(self.getCurrentObservation())
-          print(self.getPreviousObservation())
-          print(weights, features)
-          util.pause()
       return new_value
 
   def computeValueFromQValues(self, state):
