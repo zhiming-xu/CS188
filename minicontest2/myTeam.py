@@ -92,8 +92,8 @@ class QLearningAgent(CaptureAgent):
     weights['bias'] = .1
     self.weights = weights
     self.epsilon = .2
-    self.alpha = .1
-    self.discount = .9
+    self.alpha = .5
+    self.discount = 1
     self.pre_action = None
     self.is_dead_end = util.Counter()
     self.is_tunnel = util.Counter()
@@ -155,11 +155,12 @@ class QLearningAgent(CaptureAgent):
         pre_state = self.getPreviousObservation()
         food_bonus = 5 * self.pre_features['eat_food']
         score_bonus = 10 * (state.getScore() - pre_state.getScore())
+        oppo_bonus = 8 * self.pre_features['eat_opponent']
         pre_pos = pre_state.getAgentState(self.index).getPosition()
         cur_pos = state.getAgentState(self.index).getPosition()
         if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
             score_bonus -= 10
-        reward = food_bonus + score_bonus
+        reward = food_bonus + score_bonus + oppo_bonus
         return reward
 
   def getSuccessor(self, gameState, action):
@@ -198,6 +199,7 @@ class QLearningAgent(CaptureAgent):
     avg_distance = sum(distance_to_oppo) / len(distance_to_oppo)
     features['closest_distance_to_ghost'] = closest_distance / 10.0
     features['average_distance_to_ghost'] = avg_distance / 10.0
+    features['eat_opponent'] = (closest_distance == 0)
     num_of_ghost = 0
     for distance_oppo in distance_to_oppo:
         if distance_oppo < 3:
@@ -225,7 +227,7 @@ class QLearningAgent(CaptureAgent):
     # distance to frontier
     frontier_x = walls.width / 2
     return_dis = abs(frontier_x - next_x)
-    features['return_distance'] = return_dis / (walls.width / 2)
+    # features['return_distance'] = return_dis / (walls.width / 2)
     # tunnel/crossing/dead end/open
     features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
     features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
@@ -265,11 +267,6 @@ class QLearningAgent(CaptureAgent):
     frontier_x = walls.width / 2
     frontier_dis = abs(frontier_x - next_x)
     features['frontier_distance'] = frontier_dis / (walls.width / 2)
-    # self in tunnel/crossing/dead end/open
-    features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
-    features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
-    features['is_crossing'] = self.is_crossing[(next_x, next_y)]
-    features['is_open_area'] = self.is_open_area[(next_x, next_y)]
     # self is scared
     features['is_scared'] = successor.getAgentState(self.index).scaredTimer > 0
     # calculate distance to opponents
@@ -307,8 +304,12 @@ class QLearningAgent(CaptureAgent):
       weights = self.weights
       features.normalize()
       new_value = features * weights
-      print('----------------features and weights--------------------:')
-      print(features, '\n', weights)
+      if weights[weights.argMax()] >= 10:
+          print('--------------------WARNING! GROWING WEIGHTS--------------------------')
+          print(self.getCurrentObservation())
+          print(self.getPreviousObservation())
+          print(weights, features)
+          util.pause()
       return new_value
 
   def computeValueFromQValues(self, state):
@@ -328,7 +329,7 @@ class QLearningAgent(CaptureAgent):
       actions = state.getLegalActions(self.index)
       if not actions:
           return None
-      best_action, best_reward = Directions.STOP, float('-inf')
+      best_action, best_reward = '', float('-inf')
       for action in actions:
           reward = self.getQValue(state, action)
           if reward > best_reward:
@@ -338,7 +339,6 @@ class QLearningAgent(CaptureAgent):
   
   def getQAction(self, state):
       legalActions = state.getLegalActions(self.index)
-      action = Directions.STOP
       if util.flipCoin(self.epsilon):
           action = random.choice(legalActions)
       else:
