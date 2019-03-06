@@ -94,18 +94,20 @@ class QLearningAgent(CaptureAgent):
     weights['min_distance_to_defend_food'] = -.1
     weights['dot_loss'] = -.2
     # for offensive
-    weights['closest_distance_to_ghost'] = 1.7
+    weights['closest_distance_to_ghost'] = .5
     weights['average_distance_to_ghost'] = .1
     weights['is_surrounded_by_ghost'] = -.1
-    weights['min_distance_to_food'] = -1
+    weights['min_distance_to_food'] = -1.22
     weights['carry_food'] = .1
+    weights['eat_food'] = 3.20
     weights['return_distance'] = -.1
+    weights['#-of-ghosts-1-step-away'] = -1.12
     # for both
     weights['is_dead_end'] = -.1
     weights['is_tunnel'] = -.05
     weights['is_crossing'] = .05
     weights['is_open_area'] = .1
-    weights['bias'] = .2
+    weights['bias'] = .1
     self.weights = weights
     self.epsilon = .2
     self.alpha = .3
@@ -216,17 +218,19 @@ class QLearningAgent(CaptureAgent):
       # Initiate
       features = util.Counter()
       next_state = self.getSuccessor(gameState, action)
-      food_to_eat = self.getFood(next_state)
+      food_to_eat = self.getFood(gameState)
       opponent_index = self.getOpponents(next_state)
+      oppo_position = [next_state.getAgentState(oppo).getPosition()\
+                       for oppo in opponent_index]
       walls = next_state.getWalls()
-      features['bias'] = 1
+      features['bias'] = 1.0
       new_agent_state = next_state.getAgentState(self.index)
       next_x, next_y = new_agent_state.getPosition()
 
       # Offensive / distance to closest dot
       min_distance = closestFood((int(next_x), int(next_y)), food_to_eat, walls)
       if min_distance is not None:
-          features['min_distance_to_food'] = min_distance / (walls.width * walls.height)
+          features['min_distance_to_food'] = min_distance / max(walls.width, walls.height)
 
       # Offensive / distance to closest ghost
       min_distances = []
@@ -237,7 +241,14 @@ class QLearningAgent(CaptureAgent):
                   min_distances.append(self.getMazeDistance((next_x, next_y), opponent_pos))
           if min_distances:
               features['closest_distance to ghost'] = min(min_distances) /\
-                                                      (walls.width * walls.height)
+                                                      max(walls.width, walls.height)
+      # Offensive / number of ghosts 1 step away
+          features["#-of-ghosts-1-step-away"] = sum((next_x, next_y) in\
+                  Actions.getLegalNeighbors(oppo, walls) for oppo in oppo_position)
+      # Offensive / eat food after taking action
+      features['eat_food'] = food_to_eat[int(next_x)][int(next_y)]
+      if features['eat_food']:
+          util.pause()
       features.divideAll(10.0)
       return features
 
