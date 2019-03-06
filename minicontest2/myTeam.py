@@ -49,6 +49,23 @@ def createTeam(firstIndex, secondIndex, isRed,
   """
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
+def closestFood(pos, food, walls):
+    fringe = [(pos[0], pos[1], 0)]
+    expanded = set()
+    while fringe:
+        pos_x, pos_y, dist = fringe.pop(0)
+        if (pos_x, pos_y) in expanded:
+            continue
+        expanded.add((pos_x, pos_y))
+        # if we find a food at this location then exit
+        if food[pos_x][pos_y]:
+            return dist
+        # otherwise spread out from the location to its neighbours
+        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
+        for nbr_x, nbr_y in nbrs:
+            fringe.append((nbr_x, nbr_y, dist+1))
+    # no food found
+    return None
 ##########
 # Agents #
 ##########
@@ -77,7 +94,7 @@ class QLearningAgent(CaptureAgent):
     weights['min_distance_to_defend_food'] = -.1
     weights['dot_loss'] = -.2
     # for offensive
-    weights['closest_distance_to_ghost'] = 10
+    weights['closest_distance_to_ghost'] = 1.7
     weights['average_distance_to_ghost'] = .1
     weights['is_surrounded_by_ghost'] = -.1
     weights['min_distance_to_food'] = -1
@@ -88,11 +105,11 @@ class QLearningAgent(CaptureAgent):
     weights['is_tunnel'] = -.05
     weights['is_crossing'] = .05
     weights['is_open_area'] = .1
-    weights['bias'] = .1
+    weights['bias'] = .2
     self.weights = weights
-    self.epsilon = .3
-    self.alpha = .5
-    self.discount = 1
+    self.epsilon = .2
+    self.alpha = .3
+    self.discount = .9
     self.pre_action = None
     self.is_dead_end = util.Counter()
     self.is_tunnel = util.Counter()
@@ -155,13 +172,30 @@ class QLearningAgent(CaptureAgent):
  
   def getReward(self, state):
         pre_state = self.getPreviousObservation()
-        food_bonus = 20 * self.pre_features['eat_food']
-        score_bonus = 100 * (state.getScore() - pre_state.getScore())
-        oppo_bonus = 40 * self.pre_features['eat_opponent']
+        # food_bonus = 2 * self.pre_features['eat_food']
+        # oppo_bonus = 4 * self.pre_features['eat_opponent']
+        # score bonus
+        score_bonus = 10 * (state.getScore() - pre_state.getScore())
+        # food bonus
         pre_pos = pre_state.getAgentState(self.index).getPosition()
         cur_pos = state.getAgentState(self.index).getPosition()
+        pre_food = pre_state.getBlueFood() if pre_state.isOnRedTeam(self.index)\
+                   else pre_state.getRedFood()
+        cur_food = state.getBlueFood() if state.isOnRedTeam(self.index)\
+                   else state.getRedFood()
+        food_bonus = 2 * (len(pre_food.asList()) - len(cur_food.asList()))
+        # death penalty
         if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
-            score_bonus -= 100
+            score_bonus -= 4
+        # eat opponents
+        oppo_index = self.getOpponents(state)
+        old_pos = [pre_state.getAgentState(oppo).getPosition() for oppo in oppo_index]
+        new_pos = [state.getAgentState(oppo).getPosition() for oppo in oppo_index]
+        num_oppo_eat = 0
+        for i in range(len(old_pos)):
+            if abs(old_pos[i][0]-new_pos[i][0]) + abs(old_pos[i][1]-new_pos[i][1]) > 3:
+                num_oppo_eat += 1
+        oppo_bonus = num_oppo_eat * 4
         reward = food_bonus + score_bonus + oppo_bonus
         return reward
 
@@ -178,22 +212,21 @@ class QLearningAgent(CaptureAgent):
       return successor
   
   # for both offensive and defensive agent
-  def getFeaturesPacman(self, gameState, action):
+  def getFeatures(self, gameState, action):
       # Initiate
       features = util.Counter()
       next_state = self.getSuccessor(gameState, action)
-      food_to_eat = self.getFood(next_state).asList()
+      food_to_eat = self.getFood(next_state)
       opponent_index = self.getOpponents(next_state)
       walls = next_state.getWalls()
-      features['bias'] = 1.0
+      features['bias'] = 1
       new_agent_state = next_state.getAgentState(self.index)
       next_x, next_y = new_agent_state.getPosition()
 
       # Offensive / distance to closest dot
-      if food_to_eat:
-          min_distance = min([self.getMazeDistance((next_x, next_y), food)
-                              for food in food_to_eat])
-          features['min_distance_to_food'] = min_distance
+      min_distance = closestFood((int(next_x), int(next_y)), food_to_eat, walls)
+      if min_distance is not None:
+          features['min_distance_to_food'] = min_distance / (walls.width * walls.height)
 
       # Offensive / distance to closest ghost
       min_distances = []
@@ -203,11 +236,9 @@ class QLearningAgent(CaptureAgent):
                   opponent_pos = next_state.getAgentState(opponent).getPosition()
                   min_distances.append(self.getMazeDistance((next_x, next_y), opponent_pos))
           if min_distances:
-              features['closest_distance to ghost'] = min(min_distances)
-
-      if food_to_eat:
-          last_role = 
-
+              features['closest_distance to ghost'] = min(min_distances) /\
+                                                      (walls.width * walls.height)
+      features.divideAll(10.0)
       return features
 
 
@@ -235,27 +266,23 @@ class QLearningAgent(CaptureAgent):
 
 
 
-  def getFeatures(self, gameState, action):
-      self.pre_features = self.getFeaturesPacman(gameState, action)
-      return self.pre_features
 
   def getQValue(self, state, action):
       features = self.getFeatures(state, action)
       weights = self.weights
-      features.normalize()
       new_value = features * weights
-      return new_value
+      return new_value, features
 
   def computeValueFromQValues(self, state):
       actions = state.getLegalActions(self.index)
       if not actions:
           return 0.0
-      best_action, best_reward = Directions.STOP, float('-inf')
+      best_reward = float('-inf')
       for action in actions:
-          reward = self.getQValue(state, action)
+          reward, features = self.getQValue(state, action)
           if reward > best_reward:
               best_reward = reward
-              best_action = action
+              self.pre_features = features
       self.pre_value = best_reward
       return best_reward
 
@@ -265,7 +292,7 @@ class QLearningAgent(CaptureAgent):
           return None
       best_action, best_reward = '', float('-inf')
       for action in actions:
-          reward = self.getQValue(state, action)
+          reward, _ = self.getQValue(state, action)
           if reward > best_reward:
               best_reward = reward
               best_action = action
