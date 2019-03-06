@@ -149,7 +149,10 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
 
   def getWeights(self, gameState, action):
     return {'successorScore': 100, 'distanceToFood': -1}
-
+  
+  # def chooseAction(self, gameState):
+  #    return Directions.STOP
+  
 class DefensiveReflexAgent(ReflexCaptureAgent):
   """
   A reflex agent that keeps its side Pacman-free. Again,
