@@ -1,432 +1,383 @@
-# baselineTeam.py
-# ---------------
-# Licensing Information:  You are free to use or extend these projects for
-# educational purposes provided that (1) you do not distribute or publish
-# solutions, (2) you retain this notice, and (3) you provide clear
-# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-#
-# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
-# The core projects and autograders were primarily created by John DeNero
-# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# Student side autograding was added by Brad Miller, Nick Hay, and
-# Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
-
-# baselineTeam.py
-# ---------------
-# Licensing Information: Please do not distribute or publish solutions to this
-# project. You are free to use and extend these projects for educational
-# purposes. The Pacman AI projects were developed at UC Berkeley, primarily by
-# John DeNero (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
+#!/usr/bin/env python 
+# -*- coding:utf-8 -*-
 
 from captureAgents import CaptureAgent
 import distanceCalculator
 import random, time, util, sys
 from game import Directions, Actions
 import game
-from util import nearestPoint
 import numpy as np
-
-#################
-# Team creation #
-#################
+from util import nearestPoint
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='QLearningAgent', second='QLearningAgent'):
-  """
-  This function should return a list of two agents that will form the
-  team, initialized using firstIndex and secondIndex as their agent
-  index numbers.  isRed is True if the red team is being created, and
-  will be False if the blue team is being created.
+    return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
-  As a potentially helpful development aid, this function can take
-  additional string-valued keyword arguments ("first" and "second" are
-  such arguments in the case of this function), which will come from
-  the --redOpts and --blueOpts command-line arguments to capture.py.
-  For the nightly contest, however, your team will be created without
-  any extra arguments, so you should make sure that the default
-  behavior is what you want for the nightly contest.
-  """
-  return [eval(first)(firstIndex), eval(second)(secondIndex)]
-
-def closestFood(pos, food, walls):
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find a food at this location then exit
-        if food[pos_x][pos_y]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in nbrs:
-            fringe.append((nbr_x, nbr_y, dist+1))
-    # no food found
-    return None
-
-def closestDistance(pos, target, walls):
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find target at this location then exit
-        if pos_x == target[0] and pos_y == target[1]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in nbrs:
-            fringe.append((nbr_x, nbr_y, dist+1))
-    # no path found
-    return None
-##########
-# Agents #
-##########
+def softmax(counter):
+    sum = 0
+    for iter in counter:
+        sum += np.exp(counter[iter])
+    for iter in counter:
+        counter[iter] /= sum
+    return counter
 
 class QLearningAgent(CaptureAgent):
-  """
-  A base class for reflex agents that chooses score-maximizing actions
-  """
 
-  def registerInitialState(self, gameState):
-    self.start = gameState.getAgentPosition(self.index)
-    CaptureAgent.registerInitialState(self, gameState)
-    weights = util.Counter()
-    # for defensive
-    weights['oppo_in_dead_end'] = 2.3
-    weights['oppo_in_tunnel'] = 1.4
-    weights['oppo_in_crossing'] = -4
-    weights['oppo_in_open_area'] = -2.2
-    weights['closest_distance_to_pacman'] = -4.2
-    weights['average_distance_to_pacman'] = -5.4
-    weights['is-pacman-1-step-away'] = 3.4
-    weights['is-pacman-2-step-away'] = 2.8
-    weights['eat_pacman'] = 6.4
-    weights['opponent_closest_distance_to_food'] = -1.2
-    # for offensive
-    weights['min_distance_to_food'] = -6.7
-    weights['carry_food'] = 3.4
-    weights['eat_food'] = 4
-    weights['return_distance'] = -5
-    weights['is-ghosts-1-step-away'] = -4.3
-    weights['is-ghosts-2-step-away'] = -5
-    weights['is_pacman'] = 3.2
-    weights['food_nearby'] = 1
-    weights['closest_distance_to_ghost'] = -1
-    # for both
-    weights['is_dead_end'] = -1.1
-    weights['is_tunnel'] = -2
-    weights['is_crossing'] = 1
-    weights['is_open_area'] = 2.0
-    weights['bias'] = 1
-    weights['is_stop'] = -3.7
-    weights['is_wandering'] = -4.2
-    self.weights = weights
-    self.epsilon = .1
-    self.alpha = .2
-    self.discount = .95
-    self.pre_action = []
-    self.is_dead_end = util.Counter()
-    self.is_tunnel = util.Counter()
-    self.is_crossing = util.Counter()
-    self.is_open_area = util.Counter()
-    self.pre_score = 0
-    self.pre_features = util.Counter()
-    self.pre_value = 0
-    self.carry_food = 0
-    self.pre_calculate(gameState)
+    def registerInitialState(self, curState):
+        CaptureAgent.registerInitialState(self, curState)
 
-  def pre_calculate(self, gameState):
-    walls = gameState.getWalls()
-    width = walls.width
-    height = walls.height
-    for i in range(width):
-        for j in range(height):
-            count = len(Actions.getLegalNeighbors((i, j), walls))
-            if count == 2:
-                self.is_dead_end[(i, j)] = 1
-            elif count == 3:
-                self.is_tunnel[(i, j)] = 1
-            elif count == 4:
-                self.is_crossing[(i, j)] = 1
-            else:
-                self.is_open_area[(i, j)] = 1
-    return
+        # Training values
+        self.weights = self.getWeights()
+        self.epsilon = 0.75
+        self.alpha = 0.3
+        self.discount = 1
 
-  def chooseAction(self, gameState):
-    """
-    Picks among the actions with the highest Q(s,a).
-    """
-    # for this part, state is the observation of last state
-    # and nextState is the current state
-    if self.getPreviousObservation() is not None:
-            self.update_value(gameState)
-    self.pre_action.append(\
-                    self.alphabetaSearch(gameState, self.index,\
-                                         2, -1e9, 1e9)[1])
-    return self.pre_action[-1]
+        # Map attributes
+        self.isDeadEnd = util.Counter()
+        self.isTunnel = util.Counter()
+        self.isCrossing = util.Counter()
+        self.isOpenArea = util.Counter()
+        self.walls = None
+        self.width = None
+        self.height = None
 
-  def update_value(self, state):
-      pre_features = self.pre_features
-      pre_value = self.pre_value
-      diff = self.getReward(state) + self.discount * self.computeValueFromQValues(state)\
-             - pre_value
-      print('------------------------THIS IS DIFF---------------------------')
-      print(diff)
-      print('WEIGHT BEFORE:', self.weights)
-      for feature in pre_features:
-          self.weights[feature] += self.alpha * diff * pre_features[feature]
-      print('WEIGHT AFTER:', self.weights)
+        # Attributes of the previous state
+        self.preState = None
+        self.preAction = None
+        self.preFeatures = None
+        self.preQValue = None
+        self.curQValue = None
 
-  def getReward(self, state):
-        pre_state = self.getPreviousObservation()
-        # food_bonus = 2 * self.pre_features['eat_food']
-        # oppo_bonus = 4 * self.pre_features['eat_opponent']
-        # score bonus
-        score_bonus = 10 * (state.getScore() - pre_state.getScore())
-        score_bonus = score_bonus if state.isOnRedTeam(self.index) else -score_bonus
-        # food bonus
-        pre_agent_state = pre_state.getAgentState(self.index)
-        cur_agent_state = state.getAgentState(self.index)
-        pre_pos = pre_agent_state.getPosition()
-        cur_pos = cur_agent_state.getPosition()
-        pre_food = pre_state.getBlueFood() if pre_state.isOnRedTeam(self.index)\
-                   else pre_state.getRedFood()
-        cur_food = state.getBlueFood() if state.isOnRedTeam(self.index)\
-                   else state.getRedFood()
-        food_bonus = 2 * (len(pre_food.asList()) - len(cur_food.asList()))
-        if food_bonus > 0:
-            self.carry_food += 1
-        elif pre_agent_state.isPacman ^ cur_agent_state.isPacman:
-            self.carry_food = 0
-        food_bonus /= np.sqrt(self.carry_food + 1)
-        # food loss
-        pre_food = pre_state.getRedFood() if pre_state.isOnRedTeam(self.index)\
-                   else pre_state.getBlueFood()
-        cur_food = state.getRedFood() if state.isOnRedTeam(self.index)\
-                   else state.getBlueFood()
-        food_loss = 2 * (len(pre_food.asList()) - len(cur_food.asList()))
-        # death penalty
-        if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
-            score_bonus -= 1
-        # stop penalty
-        stop_penalty = self.pre_action[-1] == Directions.STOP
-        wandering_penalty =\
-            self.pre_action[-1] == Actions.reverseDirection(self.pre_action[-2])\
-                                   if len(self.pre_action) > 1 else 0
-        # eat opponents
-        oppo_index = self.getOpponents(state)
-        old_pos = [pre_state.getAgentPosition(oppo) for oppo in oppo_index]
-        new_pos = [state.getAgentPosition(oppo) for oppo in oppo_index]
-        num_oppo_eat = 0
-        for i in range(len(old_pos)):
-            if abs(old_pos[i][0]-new_pos[i][0]) + abs(old_pos[i][1]-new_pos[i][1]) > 3:
-                num_oppo_eat += 1
-        oppo_bonus = num_oppo_eat * 1
-        reward = food_bonus + score_bonus + oppo_bonus - food_loss - stop_penalty -\
-                 wandering_penalty
+        # Attributes for pacman to make decisions
+        self.carryingFood = 0
+
+        # Calculate in the initial 15 seconds
+        self.preCalculate(curState)
+
+    # Calculating the map's attributes in the initial 15 seconds
+    def preCalculate(self, curState): #TODO replace it with a improved version
+        walls = curState.getWalls()
+        width = walls.width
+        height = walls.height
+        for i in range(width):
+            for j in range(height):
+                count = 0
+                for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST,
+                               Directions.WEST, Directions.STOP]:
+                    dx, dy = Actions.directionToVector(action)
+                    next_x, next_y = int(i + dx), int(j + dy)
+                    if 0 <= next_x < width and 0 <= next_y < height \
+                            and walls[next_x][next_y] is False:
+                        count += 1
+                if count <= 2:
+                    self.isDeadEnd[(i, j)] = 1
+                elif count == 3:
+                    self.isTunnel[(i, j)] = 1
+                elif count == 4:
+                    self.isCrossing[(i, j)] = 1
+                else:
+                    self.isOpenArea[(i, j)] = 1
+        self.walls = walls
+        self.width = width
+        self.height = height
+
+    # Pick among the next action with the highest Q(s, a)
+    # And update the weights. Also updates preState with
+    # curState and updates self.preQValue
+    def chooseAction(self, curState):
+        # Calculate optimal action
+        legalActions = curState.getLegalActions(self.index)
+        if util.flipCoin(self.epsilon):
+            bestAction = random.choice(legalActions)
+            features = self.getFeatures(curState, bestAction)
+            maxQValue = self.weights * features
+            self.preFeatures = features
+        else:
+            bestAction, maxQValue = '', float('-inf')
+            for action in legalActions:
+                features = self.getFeatures(curState, action)
+                reward = self.weights * features
+                if reward > maxQValue:
+                    maxQValue = reward
+                    bestAction = action
+                    self.preFeatures = features
+        if self.preState:
+            self.updateWeights(curState, maxQValue)
+        self.preState = curState
+        self.preQValue = maxQValue
+        return bestAction
+
+    # Updates weights for features
+    # Updates self.preQValue
+    def updateWeights(self, curState, curQValue):
+        diff = self.getReward(curState) + self.discount * curQValue - self.preQValue
+        for feature in self.preFeatures:
+            self.weights[feature] += self.alpha * diff * self.preFeatures[feature]
+
+    # Returns the reward the pacman gets from the previous action
+    def getReward(self, curState):
+        # Calculating related variables
+        curPos = curState.getAgentState(self.index).getPosition()
+        prePos = self.preState.getAgentState(self.index).getPosition()
+        curFood = self.getFood(curState)
+        preFood = self.getFood(self.preState)
+        curDefendingFood = self.getOwnFood(curState)
+        preDefendingFood = self.getOwnFood(self.preState)
+        opponentIndex = self.getOpponents(curState)
+
+        # The bonus for gaining score
+        scoreBonus = 10 * (curState.getScore() - self.preState.getScore())
+        if curState.isOnRedTeam(self.index) is False:
+            scoreBonus *= -1
+
+        # The bonus for eating a food pallet
+        foodBonus = 2 * (len(preFood.asList()) - len(curFood.asList()))
+        if foodBonus > 0:
+            self.carryingFood += 1
+
+        # The bonus for eating an opponent
+        numEaten = 0
+        for index in opponentIndex:
+            preOpponentPos = self.preState.getAgentState(index).getPosition()
+            curOpponentPos = curState.getAgentState(index).getPosition()
+            if abs(preOpponentPos[0] - curOpponentPos[0]) + abs(preOpponentPos[1] - curOpponentPos[1]) > 3:
+                numEaten += 1
+        enemyEatenBonus = 3 * numEaten
+
+        # The penalty for being eaten
+        deathPenalty = 0
+        if abs(curPos[0] - prePos[0]) + abs(curPos[1] - prePos[1]) > 3:
+            deathPenalty = 4
+            self.carryingFood = 0
+
+        # The penalty for losing a defending pallet
+        foodLossPenalty = 1 * (len(preDefendingFood.asList()) - len(curDefendingFood.asList()))
+
+        reward = scoreBonus + foodBonus + enemyEatenBonus + deathPenalty + foodLossPenalty
         return reward
 
-  def alphabetaSearch(self, gameState, agentIndex, depth, alpha, beta):
-      if depth == 0 or gameState.isOver():
-          ret = self.computeValueFromQValues(gameState), Directions.STOP
-      elif agentIndex % 2 == self.index % 2:
-          ret = self.alphasearch(gameState, agentIndex, depth, alpha, beta)
-      else:
-          ret = self.betasearch(gameState, agentIndex, depth, alpha, beta)
-      return ret
+    # Set the weights of every feature
+    def getWeights(self):
+        weights = util.Counter()
+        # FIXME replace this with initial weights
+        weights['bias'] = 0.2
+        weights['closestDistanceToGhost'] = 1.7
+        weights['eatsFood'] = 3
+        weights['minDistanceToFood'] = -1
+        weights['numberOfGhostsOneStepAway'] = -2
+        weights['numberOfGhostsTwoStepsAway'] = -1
+        weights['returns'] = 10
+        return weights
 
-  def alphasearch(self, gameState, agentIndex, depth, alpha, beta):
-      actions = gameState.getLegalActions(agentIndex)
-      if agentIndex == gameState.getNumAgents() - 1:
-          next_agent, next_depth = 0, depth - 1
-      else:
-          next_agent, next_depth = agentIndex + 1, depth
-      max_score, max_action = -1e9, Directions.STOP
-      for action in actions:
-          successor_game_state = gameState.generateSuccessor(agentIndex, action)
-          new_score = self.alphabetaSearch(successor_game_state, next_agent, next_depth,\
-                                             alpha, beta)[0]
-          if new_score > max_score:
-              max_score, max_action = new_score, action
-          if new_score > beta:
-              return new_score, action
-          alpha = max(alpha, max_score)
-      return max_score, max_action
+    # Find the next state after taking an action in curState
+    def getNextState(self, curState, action):
+        # TODO add ghost movement
+        newState = curState.generateSuccessor(self.index, action)
+        newPos = newState.getAgentState(self.index).getPosition()
+        # Check if only half a grid point is moved
+        if newPos != nearestPoint(newPos):
+            return newState.generateSuccessor(self.index, action)
+        else:
+            return newState
 
-  def betasearch(self, gameState, agentIndex, depth, alpha, beta):
-      actions = gameState.getLegalActions(agentIndex)
-      if agentIndex == gameState.getNumAgents() - 1:
-          next_agent, next_depth = 0, depth - 1
-      else:
-          next_agent, next_depth = agentIndex + 1, depth
-      min_score, min_action = 1e9, Directions.STOP
-      for action in actions:
-          successor_game_state = gameState.generateSuccessor(agentIndex, action)
-          new_score = self.alphabetaSearch(successor_game_state, next_agent, next_depth,\
-                                             alpha, beta)[0]
-          if new_score < min_score:
-              min_score, min_action = new_score, action
-          if new_score < alpha:
-              return new_score, action
-          beta = min(beta, min_score)
-      return min_score, min_action
-  
-  def getSuccessor(self, gameState, action):
-    """
-    Finds the next successor which is a grid position (location tuple).
-    """
-    successor = gameState.generateSuccessor(self.index, action)
-    pos = successor.getAgentPosition(self.index)
-    if pos != nearestPoint(pos):
-      # Only half a grid position was covered
-      return successor.generateSuccessor(self.index, action)
-    else:
-      return successor
-  
-  # for both offensive and defensive agent
-  def getFeatures(self, gameState, action):
-      # Initiate
-      features = util.Counter()
-      next_state = self.getSuccessor(gameState, action)
-      food_to_eat = self.getFood(gameState)
-      food_to_defend = self.getFoodYouAreDefending(gameState)
-      opponent_index = self.getOpponents(gameState)
-      walls = next_state.getWalls()
-      features['bias'] = 1.0
-      new_agent_state = next_state.getAgentState(self.index)
-      next_x, next_y = new_agent_state.getPosition()
-      # if action is stop
-      features['is_stop'] = action == Directions.STOP
-      features['is_wandering'] =\
-              self.pre_action[-1] == Actions.reverseDirection(action)\
-              if self.pre_action else 0
-      # if currently carry food
-      features['carry_food'] = self.carry_food
-      # Offensive / distance to closest dot
-      min_distance = closestFood((int(next_x), int(next_y)), food_to_eat, walls)
-      if min_distance is not None:
-          features['min_distance_to_food'] = min_distance /\
-                   min(walls.width, walls.height) * 1.5
+    # Returns the food to defend
+    def getOwnFood(self, gameState):
+        if self.red:
+            return gameState.getRedFood()
+        else:
+            return gameState.getBlueFood()
 
-      # Offensive / distance to closest ghost
-      distances = []
-      opponent_pos = []
-      if next_state.getAgentState(self.index).isPacman:
-          features['is_pacman'] = 1
-          for opponent in opponent_index:
-              if gameState.getAgentState(opponent).isPacman is False:
-                  opponent_pos.append(gameState.getAgentPosition(opponent))
-                  distances.append(closestDistance((next_x, next_y),\
-                                   opponent_pos[-1], walls))
-          if distances:
-              features['closest_distance_to_ghost'] = min(distances) /\
-                                      min(walls.width, walls.height)
-          features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
-          features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
-          features['is_crossing'] = self.is_crossing[(next_x, next_y)]
-          features['is_open_area'] = self.is_open_area[(next_x, next_y)]
-          # Offensive / is ghosts 1 or 2 step away
-          if opponent_pos:
-              one_step_away = []
-              two_step_away = []
-              for oppo in opponent_pos:
-                  one_step_away += Actions.getLegalNeighbors(oppo, walls)
-              is_one_step_away = (next_x, next_y) in one_step_away
-              for oppo in one_step_away:
-                  two_step_away += Actions.getLegalNeighbors(oppo, walls)
-              is_two_step_away = (next_x, next_y) in two_step_away
-              features['is-ghosts-1-step-away'] = is_one_step_away
-              features['is-ghosts-2-step-away'] = is_two_step_away
-          # Offensive / eat food after taking action
-              if not is_one_step_away:
-                  features['eat_food'] = food_to_eat[int(next_x)][int(next_y)]
-                  features['return_distance'] = abs(next_x / (walls.width/2) - 1) *\
-                  features['carry_food']
-      # Defensive / distance to closest opponent: pacman
-      oppo_pacman_pos = []
-      for oppo in opponent_index:
-          if gameState.getAgentState(oppo).isPacman:
-              oppo_pacman_pos.append(gameState.getAgentPosition(oppo))
-      if oppo_pacman_pos:
-          distances = []
-          pacman_distance_to_food = []
-          for oppo_pos in oppo_pacman_pos:
-              # opponent: pacman's min distance to self defending food
-              pacman_distance_to_food.append(closestFood(oppo_pos,\
-                                             food_to_eat, walls))
-              # eat opponent in next move
-              features['eat_pacman'] |= int(next_x) == int(oppo_pos[0]) and\
-                                        int(next_y) == int(oppo_pos[1])
-              # opponent: pacman's situation
-              distances.append(closestDistance((next_x, next_y), oppo_pos, walls))
-              features['oppo_in_dead_end'] |= self.is_dead_end[oppo_pos]
-              features['oppo_in_tunnel'] |= self.is_tunnel[oppo_pos]
-              features['oppo_in_crossing'] |= self.is_crossing[oppo_pos]
-              features['oppo_in_open_area'] |= self.is_open_area[oppo_pos]
-              # is opponent: pacman nearby
-              one_step_away = Actions.getLegalNeighbors((next_x, next_y), walls)
-              is_one_step_away = oppo_pos in one_step_away
-              two_step_away = []
-              for oppo in one_step_away:
-                  two_step_away += Actions.getLegalNeighbors(oppo, walls)
-              is_two_step_away = oppo_pos in two_step_away
-              features['is-pacman-1-step-away'] |= is_one_step_away
-              features['is-pacman-2-step-away'] |= is_two_step_away
-              for pos in two_step_away:
-                  if food_to_eat[pos[0]][pos[1]]:
-                      features['food_nearby'] = 1
-                      break
-          features['closest_distance_to_pacman'] = min(distances) /\
-                                                   min(walls.width, walls.height)
-          features['average_distance_to_pacman'] = sum(distances) /\
-                   min(walls.width, walls.height) / len(distances)
-          features['opponent_closest_distance_to_food'] =\
-                   min(pacman_distance_to_food) / min(walls.width, walls.height)
-      features.divideAll(10.0)
-      return features
+    # Finds the closest possible food
+    def getClosestFood(self, curState):
+        pos = curState.getAgentState(self.index).getPosition()
+        food = self.getFood(curState).asList()
+        # Initiate uniform cost graph search
+        fringe = [(pos[0], pos[1], 0)]
+        expanded = set()
+        while fringe:
+            x, y, dist = fringe.pop(0)
+            if (x, y) in expanded:
+                continue
+            expanded.add((x, y))
+            if (x, y) in food:
+                return dist
+            neighbours = Actions.getLegalNeighbors((x, y), self.walls)
+            for newX, newY in neighbours:
+                fringe.append((newX, newY, dist + 1))
+        # No more food left
+        return None
 
-  def getQValue(self, state, action):
-      features = self.getFeatures(state, action)
-      weights = self.weights
-      new_value = features * weights
-      return new_value, features
+    # Extracts the features for a given state and action pair under a given policy
+    def getFeatures(self, curState, action):
+        # Initiates a new counter
+        features = util.Counter()
 
-  def computeValueFromQValues(self, state):
-      actions = state.getLegalActions(self.index)
-      if not actions:
-          return 0.0
-      best_reward = float('-inf')
-      for action in actions:
-          reward, features = self.getQValue(state, action)
-          if reward > best_reward:
-              best_reward = reward
-              self.pre_features = features
-      self.pre_value = best_reward
-      return best_reward
+        # Calculate the new state
+        newState = self.getNextState(curState, action)
+        newPos = newState.getAgentState(self.index).getPosition()
+        opponentIndex = self.getOpponents(curState)
 
-  def computeActionFromQValues(self, state):
-      actions = state.getLegalActions(self.index)
-      if not actions:
-          return None
-      best_action, best_reward = '', float('-inf')
-      for action in actions:
-          reward, _ = self.getQValue(state, action)
-          if reward > best_reward:
-              best_reward = reward
-              best_action = action
-      return best_action
-  
-  def getQAction(self, state):
-      legalActions = state.getLegalActions(self.index)
-      if util.flipCoin(self.epsilon):
-          action = random.choice(legalActions)
-      else:
-          action = self.computeActionFromQValues(state)
-      return action
+        # Constant feature bias
+        features['bias'] = 1
+
+        # Offensive / number of ghosts 1 and 2 step(s) away
+        distances = []
+        if newState.getAgentState(self.index).isPacman:
+            for opponent in opponentIndex:
+                opponentPos = newState.getAgentState(opponent).getPosition()
+                distances.append(self.getMazeDistance((newPos[0], newPos[1]), opponentPos))
+            count1 = 0
+            count2 = 0
+            for d in distances:
+                if d == 1:
+                    count1 += 1
+                if d <= 2:
+                    count2 += 1
+            features['numberOfGhostsOneStepAway'] = count1
+            features['numberOfGhostsTwoStepsAway'] = count2
+
+        # Offensive / a food is eaten in the last action (if there is no threat of ghosts)
+        if newPos in self.getFood(curState).asList() and not features['numberOfGhostsTwoStepsAway']:
+            features['eatsFood'] = 1
+
+        # Offensive / returns to its own side, crossing the boarder
+        if curState.getAgentState(self.index).isPacman and \
+                not newState.getAgentState(self.index).isPacman:
+            features['returns'] = self.carryingFood
+
+        # Offensive / distance to closest dot (if there is no threat of ghosts)
+        if self.getFood(newState) and not features['numberOfGhostsTwoStepsAway']:
+            distance = self.getClosestFood(newState)
+            if distance:
+                features['minDistanceToFood'] = distance / max(self.width, self.height)
+
+        '''
+        # Offensive / terrain effects
+        if newState.getAgentState(self.index).isPacman:
+            if self.isDeadEnd[newPos]:
+                features['isDeadEnd'] = 1
+            elif self.isTunnel[newPos]:
+                features['isTunnel'] = 1
+            elif self.isCrossing[newPos]:
+                features['isCrossing'] = 1
+            else:
+                features['isOpenArea'] = 1
+        '''
+
+        features.divideAll(10)
+        return features
+
+
+# ----------------------------------------------------------------------------------------------
+
+    def getGhostFeatures(self, curState, action):
+        return util.Counter()
+
+    def getTactics(self, curState):
+        # Calculate some of the features
+        return 0
+
+    def getQValue(self, curState, action, tactic):
+        return 0
+
+    def MCTS(self, curState):
+        QValues = util.Counter(util.Counter())
+        Values = util.Counter()
+        # First, determine the tactics and set the timer
+        tactic = self.getTactics(curState)
+        startTime = time.time()
+
+        # Do the main loop of MCTS
+        fringe = util.Stack()
+        fringe.push(curState)
+        tempActions = util.Queue()
+        bestActions = util.Queue()
+        pathAndReward = util.Stack()
+        expandedStates = util.Counter()
+        nextStates = util.Counter(util.Counter())
+        curDepth = 0
+        while True:
+            topState = fringe.pop()
+            topPos = topState.getAgentPosition(self.index)
+            if curDepth >= self.Depth:
+                # Backpropogation
+                cumulativeReward = 0
+                while pathAndReward.isEmpty() is False:
+                    state, reward = pathAndReward.pop()
+                    cumulativeReward = reward + cumulativeReward * self.discount
+                    Values[state] = cumulativeReward
+            else:
+                reward = self.getReward(topState)
+                pathAndReward.push((topState, reward))
+                if expandedStates[topState] > 0:
+                    # Not only calculate Q(s, a), should consider V(s) for some descendants
+                    expandedStates[topState] += 1
+                    actionProb = util.Counter()
+                    for action in nextStates[topState]:
+                        nextState = nextStates[topState][action]
+                        # If next state is expanded, use V(s)
+                        if expandedStates[nextState] > 0:
+                            actionProb[action] = Values[nextState]
+                        # If next state is not expanded, use Q(s, a)
+                        else:
+                            actionProb[action] = QValues[nextState][action]
+                    actionProb = softmax(actionProb)  # Calculate probability according to Q(s, a) or V(s)
+
+                else:
+                    # If the state has not been expanded, expand the state
+                    expandedStates[topState] += 1
+                    legalActions = topState.getLegalActions(self.index)
+                    actionProb = util.Counter()
+                    for action in legalActions:
+                        QValues[topPos][action] = self.getQValue(topState, action, tactic)
+                        actionProb[action] = QValues[topPos][action]
+                        nextStates[topState][action] = self.getNextState(topState, action)
+                    actionProb = softmax(actionProb)  # Calculate probability according to Q(s, a)
+
+                # Choose action according to action probability
+                flip = np.random.random()
+                cumulative = 0
+                chosenAction = "Error"  # Marking error
+                for prob in actionProb:
+                    if cumulative <= flip <= cumulative + actionProb[prob]:
+                        chosenAction = prob
+                    else:
+                        cumulative += actionProb[prob]
+                tempActions.push((chosenAction, QValues[topPos][chosenAction]))
+                nextState = nextStates[topState][chosenAction]
+
+                # Determine whether to do a back track
+                if util.flipCoin(1 / np.log2(curDepth + self.bias)):
+                    fringe.push(curState)
+                fringe.push(nextState)
+                curDepth += 1
+            endTime = time.time()
+            if endTime - startTime > self.timeInterval:
+                break
+        return bestActions
+
+    def chooseAction2(self, curState):
+        # these should be put in init
+        self.actionsChosen = util.Queue()  # A pair of action and QValue (calculated wit features)
+        self.tolerance = 3  # Set to tolerance
+        self.Depth = 20
+        self.bias = 2
+        self.timeInterval = 900
+
+        # If no pre-calculated actions, initiate MCTS algorithm
+        if self.actionsChosen.isEmpty():
+            self.MCTS(curState)
+        else:
+            # calculate current features and determine whether to give up the old actions
+            optimalAction, preQValue = self.actionsChosen.pop()
+            tactic = self.getTactics(curState)
+            legalActions = curState.getLegalActions()
+            maxQValue = float("-inf")
+            for action in legalActions:
+                maxQValue = max(self.getQValue(curState, action, tactic), maxQValue)
+            diff = abs(maxQValue - preQValue)
+            if diff > self.tolerance:
+                self.MCTS(curState)
+            else:
+                return optimalAction
+        return self.actionsChosen.pop()[0]
