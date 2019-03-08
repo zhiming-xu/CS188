@@ -120,6 +120,8 @@ add_pacman_stuff	mazeGenerator.py	/^def add_pacman_stuff(/
 add_wall	mazeGenerator.py	/^  def add_wall(/
 agentCrash	capture.py	/^  def agentCrash(/
 allGood	capture.py	/^    def allGood(/
+alphabetaSearch	myTeam.py	/^  def alphabetaSearch(/
+alphasearch	myTeam.py	/^  def alphasearch(/
 animatePacman	captureGraphicsDisplay.py	/^  def animatePacman(/
 animatePacman	graphicsDisplay.py	/^    def animatePacman(/
 applyAction	capture.py	/^  def applyAction(/
@@ -128,6 +130,7 @@ arrayInvert	util.py	/^def arrayInvert(/
 asList	game.py	/^    def asList(/
 baselineTeam	baselineTeam.py	1
 begin_graphics	graphicsUtils.py	/^def begin_graphics(/
+betasearch	myTeam.py	/^  def betasearch(/
 capture	capture.py	1
 captureAgents	captureAgents.py	1
 captureGraphicsDisplay	captureGraphicsDisplay.py	1
@@ -149,6 +152,8 @@ clearIcon	graphicsDisplay.py	/^    def clearIcon(/
 clearMessage	captureGraphicsDisplay.py	/^  def clearMessage(/
 clearMessage	graphicsDisplay.py	/^    def clearMessage(/
 clear_screen	graphicsUtils.py	/^def clear_screen(/
+closestDistance	myTeam.py	/^def closestDistance(/
+closestFood	myTeam.py	/^def closestFood(/
 colorToVector	graphicsUtils.py	/^def colorToVector(/
 computeActionFromQValues	myTeam.py	/^  def computeActionFromQValues(/
 computeDistances	distanceCalculator.py	/^def computeDistances(/
@@ -252,7 +257,6 @@ getFeatures	baselineTeam.py	/^  def getFeatures(/
 getFeatures	features.py	/^def getFeatures(/
 getFeatures	myTeam.py	/^  def getFeatures(/
 getFeaturesDefensive	features.py	/^def getFeaturesDefensive(/
-getFeaturesPacman	myTeam.py	/^  def getFeaturesPacman(/
 getFood	captureAgents.py	/^  def getFood(/
 getFoodYouAreDefending	captureAgents.py	/^  def getFoodYouAreDefending(/
 getFurthestCorner	layout.py	/^    def getFurthestCorner(/

@@ -169,7 +169,7 @@ class QLearningAgent(CaptureAgent):
             self.update_value(gameState)
     self.pre_action.append(\
                     self.alphabetaSearch(gameState, self.index,\
-                                         4, -1e9, 1e9)[1])
+                                         2, -1e9, 1e9)[1])
     return self.pre_action[-1]
 
   def update_value(self, state):
@@ -177,12 +177,12 @@ class QLearningAgent(CaptureAgent):
       pre_value = self.pre_value
       diff = self.getReward(state) + self.discount * self.computeValueFromQValues(state)\
              - pre_value
-      #print('------------------------THIS IS DIFF---------------------------')
-      #print(diff)
-      #print('WEIGHT BEFORE:', self.weights)
+      print('------------------------THIS IS DIFF---------------------------')
+      print(diff)
+      print('WEIGHT BEFORE:', self.weights)
       for feature in pre_features:
           self.weights[feature] += self.alpha * diff * pre_features[feature]
-      #print('WEIGHT AFTER:', self.weights)
+      print('WEIGHT AFTER:', self.weights)
 
   def getReward(self, state):
         pre_state = self.getPreviousObservation()
@@ -234,7 +234,7 @@ class QLearningAgent(CaptureAgent):
         return reward
 
   def alphabetaSearch(self, gameState, agentIndex, depth, alpha, beta):
-      if depth == 0 or gameState.isWin() or gameState.isLose():
+      if depth == 0 or gameState.isOver():
           ret = self.computeValueFromQValues(gameState), Directions.STOP
       elif agentIndex % 2 == self.index % 2:
           ret = self.alphasearch(gameState, agentIndex, depth, alpha, beta)

@@ -909,7 +909,7 @@ def readCommand( argv ):
 
 def randomLayout(seed = None):
   if not seed:
-    seed = random.randint(0,99999999)
+    seed = random.randint(0, 9999999)
   # layout = 'layouts/random%08dCapture.lay' % seed
   # print 'Generating random layout in %s' % layout
   import mazeGenerator
