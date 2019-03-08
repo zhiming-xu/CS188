@@ -299,6 +299,7 @@ class QLearningAgent(CaptureAgent):
         tempActions = util.Queue()
         bestActions = util.Queue()
         pathAndReward = util.Stack()
+        bestReward = float("-inf")
         expandedStates = util.Counter()
         nextStates = util.Counter()
         curDepth = 0
@@ -313,6 +314,9 @@ class QLearningAgent(CaptureAgent):
                     state, reward = pathAndReward.pop()
                     cumulativeReward = reward + cumulativeReward * self.discount
                     Values[state] = cumulativeReward
+                if cumulativeReward > bestReward:
+                    bestReward = cumulativeReward
+                    bestActions = tempActions
             else:
                 reward = self.getReward(state)
                 pathAndReward.push((state, reward))
@@ -373,6 +377,10 @@ class QLearningAgent(CaptureAgent):
         self.Depth = 20
         self.bias = 2
         self.timeInterval = 900
+        self.Tsurvival = 0
+        self.Tretreat = 0
+        self.Tfoodloss = 0
+        self.Twinrate = 0
 
         # If no pre-calculated actions, initiate MCTS algorithm
         if self.actionsChosen.isEmpty():
