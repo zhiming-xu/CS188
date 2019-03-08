@@ -6,19 +6,19 @@ import distanceCalculator
 import random, time, util, sys
 from game import Directions, Actions
 import game
-import numpy as np
 from util import nearestPoint
+from numpy import exp, log2
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='QLearningAgent', second='QLearningAgent'):
     return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
 def softmax(counter):
-    sum = 0
-    for iter in counter:
-        sum += np.exp(counter[iter])
-    for iter in counter:
-        counter[iter] /= sum
+    result = 0
+    for element in counter:
+        result += exp(counter[element])
+    for element in counter:
+        counter[element] = exp(counter[element]) / result
     return counter
 
 class QLearningAgent(CaptureAgent):
@@ -84,6 +84,7 @@ class QLearningAgent(CaptureAgent):
     # Pick among the next action with the highest Q(s, a)
     # And update the weights. Also updates preState with
     # curState and updates self.preQValue
+    '''
     def chooseAction(self, curState):
         # Calculate optimal action
         legalActions = curState.getLegalActions(self.index)
@@ -103,20 +104,22 @@ class QLearningAgent(CaptureAgent):
                     self.preFeatures = features
         if self.preState:
             self.updateWeights(curState, maxQValue)
-        self.preState = curState
         self.preQValue = maxQValue
         return bestAction
-
+     '''
     # Updates weights for features
     # Updates self.preQValue
+    '''
     def updateWeights(self, curState, curQValue):
         diff = self.getReward(curState) + self.discount * curQValue - self.preQValue
         for feature in self.preFeatures:
             self.weights[feature] += self.alpha * diff * self.preFeatures[feature]
-
+    '''
     # Returns the reward the pacman gets from the previous action
     def getReward(self, curState):
         # Calculating related variables
+        if not self.preState:
+            return 0
         curPos = curState.getAgentState(self.index).getPosition()
         prePos = self.preState.getAgentState(self.index).getPosition()
         curFood = self.getFood(curState)
@@ -278,27 +281,31 @@ class QLearningAgent(CaptureAgent):
         return 0
 
     def getQValue(self, curState, action, tactic):
-        return 0
+        features = self.getFeatures(curState, action)
+        weights = self.weights
+        new_value = features * weights
+        return new_value, features
 
     def MCTS(self, curState):
-        QValues = util.Counter(util.Counter())
+        QValues = util.Counter()
         Values = util.Counter()
         # First, determine the tactics and set the timer
         tactic = self.getTactics(curState)
         startTime = time.time()
 
         # Do the main loop of MCTS
-        fringe = util.Stack()
-        fringe.push(curState)
+        fringe = util.PriorityQueue()
+        fringe.push(curState, -time.time())
         tempActions = util.Queue()
         bestActions = util.Queue()
         pathAndReward = util.Stack()
         expandedStates = util.Counter()
-        nextStates = util.Counter(util.Counter())
+        nextStates = util.Counter()
         curDepth = 0
-        while True:
-            topState = fringe.pop()
-            topPos = topState.getAgentPosition(self.index)
+        while fringe.isEmpty() is False:
+            # FIXME pop method is interesting
+            state = fringe.pop()
+            topPos = state.getAgentPosition(self.index)
             if curDepth >= self.Depth:
                 # Backpropogation
                 cumulativeReward = 0
@@ -307,14 +314,14 @@ class QLearningAgent(CaptureAgent):
                     cumulativeReward = reward + cumulativeReward * self.discount
                     Values[state] = cumulativeReward
             else:
-                reward = self.getReward(topState)
-                pathAndReward.push((topState, reward))
-                if expandedStates[topState] > 0:
+                reward = self.getReward(state)
+                pathAndReward.push((state, reward))
+                if expandedStates[state] > 0:
                     # Not only calculate Q(s, a), should consider V(s) for some descendants
-                    expandedStates[topState] += 1
+                    expandedStates[state] += 1
                     actionProb = util.Counter()
-                    for action in nextStates[topState]:
-                        nextState = nextStates[topState][action]
+                    for action in nextStates[state]:
+                        nextState = nextStates[state][action]
                         # If next state is expanded, use V(s)
                         if expandedStates[nextState] > 0:
                             actionProb[action] = Values[nextState]
@@ -325,17 +332,20 @@ class QLearningAgent(CaptureAgent):
 
                 else:
                     # If the state has not been expanded, expand the state
-                    expandedStates[topState] += 1
-                    legalActions = topState.getLegalActions(self.index)
+                    expandedStates[state] += 1
+                    legalActions = state.getLegalActions(self.index)
                     actionProb = util.Counter()
                     for action in legalActions:
-                        QValues[topPos][action] = self.getQValue(topState, action, tactic)
+                        # print(self.getQValue(topState, action, tactic), QValues[topPos][action])
+                        QValues[topPos] = util.Counter()
+                        QValues[topPos][action] = self.getQValue(state, action, tactic)[0]
                         actionProb[action] = QValues[topPos][action]
-                        nextStates[topState][action] = self.getNextState(topState, action)
+                        nextStates[state] = util.Counter()
+                        nextStates[state][action] = self.getNextState(state, action)
                     actionProb = softmax(actionProb)  # Calculate probability according to Q(s, a)
 
                 # Choose action according to action probability
-                flip = np.random.random()
+                flip = random.random()
                 cumulative = 0
                 chosenAction = "Error"  # Marking error
                 for prob in actionProb:
@@ -344,19 +354,19 @@ class QLearningAgent(CaptureAgent):
                     else:
                         cumulative += actionProb[prob]
                 tempActions.push((chosenAction, QValues[topPos][chosenAction]))
-                nextState = nextStates[topState][chosenAction]
+                nextState = nextStates[state][chosenAction]
 
                 # Determine whether to do a back track
-                if util.flipCoin(1 / np.log2(curDepth + self.bias)):
-                    fringe.push(curState)
-                fringe.push(nextState)
+                if util.flipCoin(1 / log2(curDepth + self.bias)):
+                    fringe.push(curState, -time.time())
+                fringe.push(nextState, -time.time())
                 curDepth += 1
             endTime = time.time()
             if endTime - startTime > self.timeInterval:
                 break
         return bestActions
 
-    def chooseAction2(self, curState):
+    def chooseAction(self, curState):
         # these should be put in init
         self.actionsChosen = util.Queue()  # A pair of action and QValue (calculated wit features)
         self.tolerance = 3  # Set to tolerance
@@ -374,10 +384,12 @@ class QLearningAgent(CaptureAgent):
             legalActions = curState.getLegalActions()
             maxQValue = float("-inf")
             for action in legalActions:
-                maxQValue = max(self.getQValue(curState, action, tactic), maxQValue)
+                maxQValue = max(self.getQValue(curState, action, tactic)[0], maxQValue)
             diff = abs(maxQValue - preQValue)
             if diff > self.tolerance:
                 self.MCTS(curState)
             else:
+                self.preState = curState
                 return optimalAction
+        self.preState = curState
         return self.actionsChosen.pop()[0]

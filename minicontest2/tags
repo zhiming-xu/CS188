@@ -23,6 +23,7 @@ InfoPane	graphicsDisplay.py	/^class InfoPane:/
 KeyboardAgent	keyboardAgents.py	/^class KeyboardAgent(/
 KeyboardAgent2	keyboardAgents.py	/^class KeyboardAgent2(/
 Layout	layout.py	/^class Layout:/
+MCTS	myTeam.py	/^    def MCTS(/
 Maze	mazeGenerator.py	/^class Maze:/
 NullGraphics	textDisplay.py	/^class NullGraphics:/
 OffensiveReflexAgent	baselineTeam.py	/^class OffensiveReflexAgent(/
@@ -120,8 +121,6 @@ add_pacman_stuff	mazeGenerator.py	/^def add_pacman_stuff(/
 add_wall	mazeGenerator.py	/^  def add_wall(/
 agentCrash	capture.py	/^  def agentCrash(/
 allGood	capture.py	/^    def allGood(/
-alphabetaSearch	myTeam.py	/^  def alphabetaSearch(/
-alphasearch	myTeam.py	/^  def alphasearch(/
 animatePacman	captureGraphicsDisplay.py	/^  def animatePacman(/
 animatePacman	graphicsDisplay.py	/^    def animatePacman(/
 applyAction	capture.py	/^  def applyAction(/
@@ -130,7 +129,6 @@ arrayInvert	util.py	/^def arrayInvert(/
 asList	game.py	/^    def asList(/
 baselineTeam	baselineTeam.py	1
 begin_graphics	graphicsUtils.py	/^def begin_graphics(/
-betasearch	myTeam.py	/^  def betasearch(/
 capture	capture.py	1
 captureAgents	captureAgents.py	1
 captureGraphicsDisplay	captureGraphicsDisplay.py	1
@@ -141,7 +139,8 @@ checkNullDisplay	graphicsDisplay.py	/^    def checkNullDisplay(/
 checkNullDisplay	textDisplay.py	/^    def checkNullDisplay(/
 chooseAction	baselineTeam.py	/^  def chooseAction(/
 chooseAction	captureAgents.py	/^  def chooseAction(/
-chooseAction	myTeam.py	/^  def chooseAction(/
+chooseAction	myTeam.py	/^    def chooseAction(/
+chooseAction	myTeam.py	/^    def chooseAction(/
 chooseFromDistribution	util.py	/^def chooseFromDistribution(/
 circle	graphicsUtils.py	/^def circle(/
 clearDebug	captureGraphicsDisplay.py	/^  def clearDebug(/
@@ -152,12 +151,8 @@ clearIcon	graphicsDisplay.py	/^    def clearIcon(/
 clearMessage	captureGraphicsDisplay.py	/^  def clearMessage(/
 clearMessage	graphicsDisplay.py	/^    def clearMessage(/
 clear_screen	graphicsUtils.py	/^def clear_screen(/
-closestDistance	myTeam.py	/^def closestDistance(/
-closestFood	myTeam.py	/^def closestFood(/
 colorToVector	graphicsUtils.py	/^def colorToVector(/
-computeActionFromQValues	myTeam.py	/^  def computeActionFromQValues(/
 computeDistances	distanceCalculator.py	/^def computeDistances(/
-computeValueFromQValues	myTeam.py	/^  def computeValueFromQValues(/
 consume	capture.py	/^  def consume(/
 copy	game.py	/^    def copy(/
 copy	game.py	/^    def copy(/
@@ -241,6 +236,7 @@ getBlueTeamIndices	capture.py	/^  def getBlueTeamIndices(/
 getCapsules	capture.py	/^  def getCapsules(/
 getCapsules	captureAgents.py	/^  def getCapsules(/
 getCapsulesYouAreDefending	captureAgents.py	/^  def getCapsulesYouAreDefending(/
+getClosestFood	myTeam.py	/^    def getClosestFood(/
 getCurrentObservation	captureAgents.py	/^  def getCurrentObservation(/
 getDirection	captureGraphicsDisplay.py	/^  def getDirection(/
 getDirection	game.py	/^    def getDirection(/
@@ -255,7 +251,7 @@ getFeatures	baselineTeam.py	/^  def getFeatures(/
 getFeatures	baselineTeam.py	/^  def getFeatures(/
 getFeatures	baselineTeam.py	/^  def getFeatures(/
 getFeatures	features.py	/^def getFeatures(/
-getFeatures	myTeam.py	/^  def getFeatures(/
+getFeatures	myTeam.py	/^    def getFeatures(/
 getFeaturesDefensive	features.py	/^def getFeaturesDefensive(/
 getFood	captureAgents.py	/^  def getFood(/
 getFoodYouAreDefending	captureAgents.py	/^  def getFoodYouAreDefending(/
@@ -264,6 +260,7 @@ getGhostColor	captureGraphicsDisplay.py	/^  def getGhostColor(/
 getGhostColor	captureGraphicsDisplay.py	/^  def getGhostColor(/
 getGhostColor	graphicsDisplay.py	/^    def getGhostColor(/
 getGhostColor	graphicsDisplay.py	/^    def getGhostColor(/
+getGhostFeatures	myTeam.py	/^    def getGhostFeatures(/
 getGrids1D	distanceCalculator.py	/^def getGrids1D(/
 getGrids2D	distanceCalculator.py	/^def getGrids2D(/
 getInitialAgentPosition	capture.py	/^  def getInitialAgentPosition(/
@@ -280,9 +277,11 @@ getMove	keyboardAgents.py	/^    def getMove(/
 getMove	keyboardAgents.py	/^    def getMove(/
 getMoveTimeout	capture.py	/^  def getMoveTimeout(/
 getMoveWarningTime	capture.py	/^  def getMoveWarningTime(/
+getNextState	myTeam.py	/^    def getNextState(/
 getNumAgents	capture.py	/^  def getNumAgents(/
 getNumGhosts	layout.py	/^    def getNumGhosts(/
 getOpponents	captureAgents.py	/^  def getOpponents(/
+getOwnFood	myTeam.py	/^    def getOwnFood(/
 getPosition	captureGraphicsDisplay.py	/^  def getPosition(/
 getPosition	captureGraphicsDisplay.py	/^  def getPosition(/
 getPosition	game.py	/^    def getPosition(/
@@ -294,24 +293,24 @@ getPreviousObservation	captureAgents.py	/^  def getPreviousObservation(/
 getProbability	util.py	/^def getProbability(/
 getProgress	capture.py	/^  def getProgress(/
 getProgress	game.py	/^    def getProgress(/
-getQAction	myTeam.py	/^  def getQAction(/
-getQValue	myTeam.py	/^  def getQValue(/
+getQValue	myTeam.py	/^    def getQValue(/
 getRandomCorner	layout.py	/^    def getRandomCorner(/
 getRandomLegalPosition	layout.py	/^    def getRandomLegalPosition(/
 getRedCapsules	capture.py	/^  def getRedCapsules(/
 getRedFood	capture.py	/^  def getRedFood(/
 getRedTeamIndices	capture.py	/^  def getRedTeamIndices(/
-getReward	myTeam.py	/^  def getReward(/
+getReward	myTeam.py	/^    def getReward(/
 getScore	capture.py	/^  def getScore(/
 getScore	captureAgents.py	/^  def getScore(/
 getSuccessor	baselineTeam.py	/^  def getSuccessor(/
 getSuccessor	game.py	/^    def getSuccessor(/
-getSuccessor	myTeam.py	/^  def getSuccessor(/
+getTactics	myTeam.py	/^    def getTactics(/
 getTeam	captureAgents.py	/^  def getTeam(/
 getWalls	capture.py	/^  def getWalls(/
 getWeights	baselineTeam.py	/^  def getWeights(/
 getWeights	baselineTeam.py	/^  def getWeights(/
 getWeights	baselineTeam.py	/^  def getWeights(/
+getWeights	myTeam.py	/^    def getWeights(/
 graphicsDisplay	graphicsDisplay.py	1
 graphicsUtils	graphicsUtils.py	1
 halfGrid	capture.py	/^def halfGrid(/
@@ -393,7 +392,7 @@ polygon	graphicsUtils.py	/^def polygon(/
 pop	util.py	/^    def pop(/
 pop	util.py	/^    def pop(/
 pop	util.py	/^    def pop(/
-pre_calculate	myTeam.py	/^  def pre_calculate(/
+preCalculate	myTeam.py	/^    def preCalculate(/
 process	capture.py	/^  def process(/
 processLayoutChar	layout.py	/^    def processLayoutChar(/
 processLayoutText	layout.py	/^    def processLayoutText(/
@@ -410,7 +409,7 @@ refresh	graphicsUtils.py	/^def refresh(/
 registerInitialState	baselineTeam.py	/^  def registerInitialState(/
 registerInitialState	captureAgents.py	/^  def registerInitialState(/
 registerInitialState	game.py	/^    def registerInitialState(/
-registerInitialState	myTeam.py	/^  def registerInitialState(/
+registerInitialState	myTeam.py	/^    def registerInitialState(/
 registerTeam	captureAgents.py	/^  def registerTeam(/
 remap_arrows	graphicsUtils.py	/^def remap_arrows(/
 removeCapsule	captureGraphicsDisplay.py	/^  def removeCapsule(/
@@ -433,6 +432,7 @@ setTeam	graphicsDisplay.py	/^    def setTeam(/
 shallowCopy	game.py	/^    def shallowCopy(/
 sign	util.py	/^def sign(/
 sleep	graphicsUtils.py	/^def sleep(/
+softmax	myTeam.py	/^def softmax(/
 sortedKeys	util.py	/^    def sortedKeys(/
 square	graphicsUtils.py	/^def square(/
 startGraphics	captureGraphicsDisplay.py	/^  def startGraphics(/
@@ -469,7 +469,7 @@ updateMessage	graphicsDisplay.py	/^    def updateMessage(/
 updateRedText	captureGraphicsDisplay.py	/^  def updateRedText(/
 updateScore	captureGraphicsDisplay.py	/^  def updateScore(/
 updateScore	graphicsDisplay.py	/^    def updateScore(/
-update_value	myTeam.py	/^  def update_value(/
+updateWeights	myTeam.py	/^    def updateWeights(/
 util	util.py	1
 vectorToDirection	game.py	/^    def vectorToDirection(/
 wait_for_click	graphicsUtils.py	/^def wait_for_click(/
