@@ -167,7 +167,9 @@ class QLearningAgent(CaptureAgent):
     # and nextState is the current state
     if self.getPreviousObservation() is not None:
             self.update_value(gameState)
-    self.pre_action.append(self.getQAction(gameState))
+    self.pre_action.append(\
+                    self.alphabetaSearch(gameState, self.index,\
+                                         4, -1e9, 1e9)[1])
     return self.pre_action[-1]
 
   def update_value(self, state):
@@ -231,6 +233,51 @@ class QLearningAgent(CaptureAgent):
                  wandering_penalty
         return reward
 
+  def alphabetaSearch(self, gameState, agentIndex, depth, alpha, beta):
+      if depth == 0 or gameState.isWin() or gameState.isLose():
+          ret = self.computeValueFromQValues(gameState), Directions.STOP
+      elif agentIndex % 2 == self.index % 2:
+          ret = self.alphasearch(gameState, agentIndex, depth, alpha, beta)
+      else:
+          ret = self.betasearch(gameState, agentIndex, depth, alpha, beta)
+      return ret
+
+  def alphasearch(self, gameState, agentIndex, depth, alpha, beta):
+      actions = gameState.getLegalActions(agentIndex)
+      if agentIndex == gameState.getNumAgents() - 1:
+          next_agent, next_depth = 0, depth - 1
+      else:
+          next_agent, next_depth = agentIndex + 1, depth
+      max_score, max_action = -1e9, Directions.STOP
+      for action in actions:
+          successor_game_state = gameState.generateSuccessor(agentIndex, action)
+          new_score = self.alphabetaSearch(successor_game_state, next_agent, next_depth,\
+                                             alpha, beta)[0]
+          if new_score > max_score:
+              max_score, max_action = new_score, action
+          if new_score > beta:
+              return new_score, action
+          alpha = max(alpha, max_score)
+      return max_score, max_action
+
+  def betasearch(self, gameState, agentIndex, depth, alpha, beta):
+      actions = gameState.getLegalActions(agentIndex)
+      if agentIndex == gameState.getNumAgents() - 1:
+          next_agent, next_depth = 0, depth - 1
+      else:
+          next_agent, next_depth = agentIndex + 1, depth
+      min_score, min_action = 1e9, Directions.STOP
+      for action in actions:
+          successor_game_state = gameState.generateSuccessor(agentIndex, action)
+          new_score = self.alphabetaSearch(successor_game_state, next_agent, next_depth,\
+                                             alpha, beta)[0]
+          if new_score < min_score:
+              min_score, min_action = new_score, action
+          if new_score < alpha:
+              return new_score, action
+          beta = min(beta, min_score)
+      return min_score, min_action
+  
   def getSuccessor(self, gameState, action):
     """
     Finds the next successor which is a grid position (location tuple).
