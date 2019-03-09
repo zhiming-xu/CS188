@@ -308,6 +308,8 @@ class QLearningAgent(CaptureAgent):
             topPos = state.getAgentPosition(self.index)
             if curDepth >= self.Depth:
                 # Backpropogation
+                # FIXME should not reset to zero
+                curDepth = 0
                 cumulativeReward = 0
                 while pathAndReward.isEmpty() is False:
                     state, reward = pathAndReward.pop()
@@ -382,7 +384,7 @@ class QLearningAgent(CaptureAgent):
         self.tolerance = 3  # Set to tolerance
         self.Depth = 40
         self.bias = 2
-        self.timeInterval = 900
+        self.timeInterval = .9
         self.Tsurvival = 0
         self.Tretreat = 0
         self.Tfoodloss = 0
