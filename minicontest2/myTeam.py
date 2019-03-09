@@ -108,7 +108,7 @@ class QLearningAgent(CaptureAgent):
 
         # Training values
         self.weights = self.getWeights()
-        self.epsilon = 0.1
+        self.epsilon = 0
         self.alpha = 0.3
         self.discount = 1
 
@@ -251,8 +251,8 @@ class QLearningAgent(CaptureAgent):
         weights['is_crossing'] = 1
         weights['is_open_area'] = 2.0
         weights['bias'] = 1
-        weights['is_stop'] = -3.7
-        weights['is_wandering'] = -4.2
+        weights['is_stop'] = -4
+        weights['is_wandering'] = -5
         return weights
 
     # Find the next state after taking an action in curState
