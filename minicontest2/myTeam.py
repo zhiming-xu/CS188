@@ -294,7 +294,7 @@ class QLearningAgent(CaptureAgent):
         return None
 
     # Extracts the features for a given state and action pair under a given policy
-    def getFeatures(self, gameState, action):
+    def getFeatures(self, gameState, action, tactic):
         # Initiate
         features = util.Counter()
         next_state = self.getNextState(gameState, action)
@@ -401,12 +401,46 @@ class QLearningAgent(CaptureAgent):
     def getGhostFeatures(self, curState, action):
         return util.Counter()
 
-    def getTactics(self, curState):
+    def getTactics(self, gameState):
         # Calculate some of the features
         # TODO implement feature calculation
-        survival = 0
-        if survival < self.Tsurvival:
-            return
+        tactic = 'rush_to_food'
+        agent_state = gameState.getAgentState(self.index)
+        agent_position = agent_state.getPosition()
+        if agent_state.isPacman:
+            # survival rate above threshold
+            # return distance
+            opponent_index = self.getOpponents(gameState)
+            walls = gameState.getWalls()
+            # Offensive / distance to closest ghost
+            distances = []
+            opponent_pos = []
+            for opponent in opponent_index:
+                if gameState.getAgentState(opponent).isPacman is False:
+                    opponent_pos.append(gameState.getAgentPosition(opponent))
+                    distances.append(closestDistance(agent_position,\
+                                                     opponent_pos[-1], walls))
+                if distances:
+                    closest_distance_to_ghost = min(distances) / \
+                                                min(walls.width, walls.height)
+                # Offensive / is ghosts 1 or 2 step away
+                if opponent_pos:
+                    one_step_away = []
+                    two_step_away = []
+                    for oppo in opponent_pos:
+                        one_step_away += Actions.getLegalNeighbors(oppo, walls)
+                    is_one_step_away = agent_position in one_step_away
+                    for oppo in one_step_away:
+                        two_step_away += Actions.getLegalNeighbors(oppo, walls)
+                    is_two_step_away = agent_position in two_step_away
+                if closest_distance_to_ghost < 5 and is_two_step_away:
+                    tactic = 'survival'
+                if self.carry_food > 3:
+                    tactic = 'retreat'
+                scared_timer = [gameState.getAgentState(oppo).scaredTimer for\
+                                oppo in opponent_index]
+                if sum(scared_timer) > 20:
+                    tactic = 'ghost_score'
         foodloss = 0
         retreat = 0
         edible = 0
@@ -416,7 +450,7 @@ class QLearningAgent(CaptureAgent):
         return 0
 
     def getQValue(self, curState, action, tactic):
-        features = self.getFeatures(curState, action)
+        features = self.getFeatures(curState, action, tactic)
         weights = self.weights
         new_value = features * weights
         return new_value, features
