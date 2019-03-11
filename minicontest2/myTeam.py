@@ -4,7 +4,7 @@ import random, time, util, sys, heapq
 from game import Directions, Actions
 import game
 from util import nearestPoint
-from numpy import exp, log2, sqrt
+from numpy import exp, log10, sqrt
 
 def createTeam(firstIndex, secondIndex, isRed,
                first='QLearningAgent', second='QLearningAgent'):
@@ -256,7 +256,6 @@ class Node:
 class QLearningAgent(CaptureAgent):
 
     def registerInitialState(self, curState):
-        start = time.time()
         CaptureAgent.registerInitialState(self, curState)
         # Initiate agent intentions with dummy values
         global agentIntentions
@@ -283,13 +282,12 @@ class QLearningAgent(CaptureAgent):
 
         # Calculate in the initial 15 seconds
         hashMap(curState)
-        print(time.time() - start)
 
         # Values needed for MCTS
         self.actionsChosen = util.Queue()  # A pair of action and QValue (calculated wit features)
-        self.tolerance = 3  # FIXME Set to actual tolerance
+        self.tolerance = 1  # FIXME Set to actual tolerance
         self.depth = 12
-        self.bias = 2
+        self.bias = 0
         self.timeInterval = 0.9  # FIXME time interval and depth should be reevaluated
 
         # Thresholds, all thresholds are exclusive
@@ -553,7 +551,7 @@ class QLearningAgent(CaptureAgent):
                     elif distance < subMinDistance:
                         subMinDistance = distance
             if subMinDistance != self.maxMazeDistance:
-                features["average_distance_to_retreat"] = 30 / (0.7 * minDistance + 0.3 * subMinDistance)
+                features["average_distance_to_retreat"] = 30 / (0.7 * minDistance + 0.3 * subMinDistance + 1)
         # TODO add avioding ghost features for all here
         return features
 
@@ -566,9 +564,9 @@ class QLearningAgent(CaptureAgent):
         opponentIndex = self.getEnemies(index)
         walls = curState.getWalls()
         if tactic == "chase_pacman":
-            features["closest_distance_to_target"] = 30 / minDist(nextPos, agentIntentions[index])
+            features["closest_distance_to_target"] = 30 / (minDist(nextPos, agentIntentions[index]) + 1)
         elif tactic == "block_pacman":
-            features["closest_distance_to_target"] = 30 / minDist(nextPos, agentIntentions[index])
+            features["closest_distance_to_target"] = 30 / (minDist(nextPos, agentIntentions[index]) + 1)
         elif tactic == "guard_exits":
             return
         elif tactic == "patrol_boarder":
@@ -589,7 +587,7 @@ class QLearningAgent(CaptureAgent):
             for y in range(walls.height):
                 if walls[x][y] == 0:
                     minDistance = min(minDistance, minDist(nextPos, (x, y)))
-            features["closest_distance_to_boarder"] = 30 / minDistance
+            features["closest_distance_to_boarder"] = 30 / (minDistance + 1)
         return features
 
     def getTactics(self, curState, index):
@@ -719,7 +717,7 @@ class QLearningAgent(CaptureAgent):
             # --------------------------------------------------------
             # the chasing tactic
             # --------------------------------------------------------
-                    invaderPos = curState.getAgentState(invader)
+                    invaderPos = invader
                     vertices = adjNode(invaderPos)
                     if minDist(agentPos, invaderPos) < self.captureExpect:
                         agentIntentions[index] = invaderPos
@@ -744,7 +742,7 @@ class QLearningAgent(CaptureAgent):
                             agentIntentions[index] = target
                             return "block_pacman"
             # --------------------------------------------------------
-            # the guarding tactic
+            # the guarding tactic TODO probably too pessimistic, should encourage agent to be sometimes offensive
             # --------------------------------------------------------
                     # The default and pessimistic single ghost defensive strategy
                     return "guard_exits"
@@ -809,7 +807,7 @@ class QLearningAgent(CaptureAgent):
                 (priority, _, _) = fringe.peekPriority()
                 depthDiff = curDepth + priority
                 curDepth = -priority
-                for i in range(depthDiff):
+                for _ in range(depthDiff):
                     tempActions.popBack()
             else:
                 reward = self.getReward(state)
@@ -860,7 +858,7 @@ class QLearningAgent(CaptureAgent):
                 nextState = nextStates[state][chosenAction]
 
                 # Determine whether to do a back track
-                if util.flipCoin(1 / log2(curDepth + self.bias)):
+                if util.flipCoin(1 / exp(0.4 * (curDepth + self.bias))):
                     fringe.push(curState, -curDepth)
                 curDepth += 1
                 fringe.push(nextState, -curDepth)
@@ -878,12 +876,12 @@ class QLearningAgent(CaptureAgent):
             optimalAction, preQValue = self.actionsChosen.pop()
             tactic = self.getTactics(curState, self.index)
             print(self.index, "  ", tactic)  # FIXME for debug purpose
-            legalActions = curState.getLegalActions()
+            legalActions = curState.getLegalActions(self.index)
             maxQValue = float("-inf")
             for action in legalActions:
                 maxQValue = max(self.getQValue(curState, action, tactic)[0], maxQValue)
             diff = abs(maxQValue - preQValue)
-            if diff > self.tolerance:
+            if diff > self.tolerance or optimalAction not in legalActions:
                 print("situation changed")  # FIXME for debug purpose
                 self.MCTS(curState)
             else:
