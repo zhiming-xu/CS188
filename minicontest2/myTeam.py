@@ -6,15 +6,18 @@ import game
 from util import nearestPoint
 from numpy import exp, log10, sqrt
 
+
 def createTeam(firstIndex, secondIndex, isRed,
                first='QLearningAgent', second='QLearningAgent'):
     return [eval(first)(firstIndex), eval(second)(secondIndex)]
+
 
 distMap = None
 nodeMap = None
 
 agentIntentions = []
 agentActions = []
+
 
 def closestFood(pos, food):
     foodList = food.asList()
@@ -25,17 +28,21 @@ def closestFood(pos, food):
         minDistance = min(minDistance, distMap[pos][foodLoc])
     return minDistance
 
+
 def adjNode(pos):
     global nodeMap
     return nodeMap[pos].getNeighbour()
+
 
 def nodeType(pos):
     global nodeMap
     return nodeMap[pos].getNodeType()
 
+
 def minDist(pos, target):
     global distMap
     return distMap[pos][target]
+
 
 def softmax(counter):
     result = 0
@@ -44,6 +51,7 @@ def softmax(counter):
     for element in counter:
         counter[element] = exp(counter[element]) / result
     return counter
+
 
 def breadthFirstSearch(pos, target, walls):
     fringe = [(pos[0], pos[1], 0)]
@@ -59,9 +67,10 @@ def breadthFirstSearch(pos, target, walls):
         # otherwise spread out from the location to its neighbours
         nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
         for nbr_x, nbr_y in nbrs:
-            fringe.append((nbr_x, nbr_y, dist+1))
+            fringe.append((nbr_x, nbr_y, dist + 1))
     # no path found
     return None
+
 
 def hashMap(curState):
     global distMap
@@ -186,7 +195,7 @@ def hashMap(curState):
                             oppoBoardering = (walls.width - boardering[0] - 1, walls.height - boardering[1] - 1)
                             nodeMap[oppoCurPos].addNeighbour(oppoBoardering)
                         curEdge.clear()
-                    else: # The node is an edge
+                    else:  # The node is an edge
                         curEdge.add(curPos)
                 # When the fringe is empty, we reached a dead end in an edge
                 for edge in curEdge:
@@ -200,12 +209,13 @@ def hashMap(curState):
         closed.add(curVertex)
     closed.clear()
 
+
 class Deque:
     def __init__(self):
         self.list = []
 
-    def push(self,item):
-        self.list.insert(0,item)
+    def push(self, item):
+        self.list.insert(0, item)
 
     def pop(self):
         return self.list.pop()
@@ -219,8 +229,9 @@ class Deque:
     def isEmpty(self):
         return len(self.list) == 0
 
+
 class PriorityQueue:
-    def  __init__(self):
+    def __init__(self):
         self.heap = []
         self.count = 0
 
@@ -243,6 +254,7 @@ class PriorityQueue:
     def isEmpty(self):
         return len(self.heap) == 0
 
+
 class Node:
     def __init__(self, nodeType):
         self.nodeType = nodeType  # 0 for edge, 1 for vertex, 2 for boarder vertex
@@ -257,16 +269,18 @@ class Node:
     def getNeighbour(self):
         return self.neighbours
 
+
 class QLearningAgent(CaptureAgent):
 
     def registerInitialState(self, curState):
         CaptureAgent.registerInitialState(self, curState)
         # Initiate agent intentions with dummy values
         global agentIntentions
+        global agentActions
         agentIntentions.append((0, 0))
         agentIntentions.append((0, 0))
-        agentActions.append("Stop")
-        agentActions.append("Stop")
+        agentActions.append('Stop')
+        agentActions.append('Stop')
 
         # Training values
         self.weights = self.getWeights()
@@ -309,7 +323,7 @@ class QLearningAgent(CaptureAgent):
         self.captureExpect = 3  # The threshold for the ghost to actively try to catch pacman
         self.trapExpect = 5  # The threshold for ghost to actively try to trap pacman
         self.blockExpect = 3  # The threshold for ghost to actively try to block the vertex near the pacman
-        self.invadeExpect = 2 # The expected chance for an enemy to invade (times map width / 2 * distance to boarder)
+        self.invadeExpect = 2  # The expected chance for an enemy to invade (times map width / 2 * distance to boarder)
 
     # Returns the reward the pacman gets from the previous action
     def getReward(self, state):
@@ -326,10 +340,10 @@ class QLearningAgent(CaptureAgent):
         cur_agent_state = state.getAgentState(self.index)
         pre_pos = pre_agent_state.getPosition()
         cur_pos = cur_agent_state.getPosition()
-        pre_food = pre_state.getBlueFood() if pre_state.isOnRedTeam(self.index)\
-                   else pre_state.getRedFood()
-        cur_food = state.getBlueFood() if state.isOnRedTeam(self.index)\
-                   else state.getRedFood()
+        pre_food = pre_state.getBlueFood() if pre_state.isOnRedTeam(self.index) \
+            else pre_state.getRedFood()
+        cur_food = state.getBlueFood() if state.isOnRedTeam(self.index) \
+            else state.getRedFood()
         food_bonus = 2 * (len(pre_food.asList()) - len(cur_food.asList()))
         if food_bonus > 0:
             self.carry_food += 1
@@ -337,54 +351,55 @@ class QLearningAgent(CaptureAgent):
             self.carry_food = 0
         food_bonus /= sqrt(self.carry_food + 1)
         # food loss
-        pre_food = pre_state.getRedFood() if pre_state.isOnRedTeam(self.index)\
-                   else pre_state.getBlueFood()
-        cur_food = state.getRedFood() if state.isOnRedTeam(self.index)\
-                   else state.getBlueFood()
+        pre_food = pre_state.getRedFood() if pre_state.isOnRedTeam(self.index) \
+            else pre_state.getBlueFood()
+        cur_food = state.getRedFood() if state.isOnRedTeam(self.index) \
+            else state.getBlueFood()
         food_loss = 2 * (len(pre_food.asList()) - len(cur_food.asList()))
         # death penalty
         if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
             score_bonus -= 1
         # stop penalty
         stop_penalty, wandering_penalty = 0, 0
-        if self.pre_action and len(self.pre_action)>1:
+        if self.pre_action and len(self.pre_action) > 1:
             stop_penalty = self.pre_action[-1] == Directions.STOP
-            wandering_penalty =\
-            self.pre_action[-1] == Actions.reverseDirection(self.pre_action[-2])\
-                                   if len(self.pre_action) > 1 else 0
+            wandering_penalty = \
+                self.pre_action[-1] == Actions.reverseDirection(self.pre_action[-2]) \
+                    if len(self.pre_action) > 1 else 0
         # eat opponents
         oppo_index = self.getOpponents(state)
         old_pos = [pre_state.getAgentPosition(oppo) for oppo in oppo_index]
         new_pos = [state.getAgentPosition(oppo) for oppo in oppo_index]
         num_oppo_eat = 0
         for i in range(len(old_pos)):
-            if abs(old_pos[i][0]-new_pos[i][0]) + abs(old_pos[i][1]-new_pos[i][1]) > 3:
+            if abs(old_pos[i][0] - new_pos[i][0]) + abs(old_pos[i][1] - new_pos[i][1]) > 3:
                 num_oppo_eat += 1
         oppo_bonus = num_oppo_eat * 1
-        reward = food_bonus + score_bonus + oppo_bonus - food_loss - stop_penalty -\
+        reward = food_bonus + score_bonus + oppo_bonus - food_loss - stop_penalty - \
                  wandering_penalty
         return reward
 
     # Set the weights of every feature
     def getWeights(self):
         weights = util.Counter()
-        weights['oppo_in_dead_end'] = 2.3
-        weights['oppo_in_tunnel'] = 1.4
-        weights['oppo_in_crossing'] = -4
-        weights['oppo_in_open_area'] = -2.2
-        weights['closest_distance_to_pacman'] = -4.2
-        weights['average_distance_to_pacman'] = -5.4
+        weights['min_distance_to_pacman'] = -2
         weights['is-pacman-1-step-away'] = 3.4
         weights['is-pacman-2-step-away'] = 2.8
         weights['eat_pacman'] = 6.4
-        weights['opponent_closest_distance_to_food'] = -1.2
+        weights['average_distance_to_retreat'] = -5
+        weights['distance_to_teammate'] = 1
+        weights['closest_distance_to_target'] = -2
+        weights['average_distance_to_exits'] = -2
+        weights['closest_distance_to_boarder'] = -2
         # for offensive
-        weights['min_distance_to_food'] = -6.7
-        weights['carry_food'] = 3.4
+        weights['min_distance_to_food'] = -1
+        weights['carry_food'] = 2
         weights['eat_food'] = 4
         weights['return_distance'] = -5
-        weights['is-ghosts-1-step-away'] = -4.3
-        weights['is-ghosts-2-step-away'] = -5
+        weights['is-ghosts-1-step-away'] = -3
+        weights['is-ghosts-2-step-away'] = -2
+        weights['is-ghosts-3-step-away'] = -2
+        weights['average_distance_to_retreat'] = -1
         weights['is_pacman'] = 3.2
         weights['food_nearby'] = 1
         weights['closest_distance_to_ghost'] = -1
@@ -403,11 +418,11 @@ class QLearningAgent(CaptureAgent):
         if newPos != nearestPoint(newPos):
             return newState.generateSuccessor(self.index, action)
         else:
-            # Stimulate teammate movement
-            teammate = self.getTeamMate(self.index)
-            newState = newState.generateSuccessor(teammate, agentActions[teammate])
+            # Simulate teammate movement
+            # teammate = self.getTeamMate(self.index)
+            # newState = newState.generateSuccessor(teammate, agentActions[teammate])
 
-            # Stimulate opponent movements
+            # Simulate opponent movements
             for oppo in self.getOpponents(curState):
                 oppoState = curState.getAgentState(oppo)
                 legalActions = curState.getLegalActions(oppo)
@@ -425,7 +440,7 @@ class QLearningAgent(CaptureAgent):
                         if maxQValue < expectQValue:
                             maxQValue = expectQValue
                             bestAction = action
-                newState = newState.generateSuccessor(oppo, bestAction)
+                curState = curState.generateSuccessor(oppo, bestAction)
             return newState
 
     def getOwnBoarder(self, walls):
@@ -465,24 +480,41 @@ class QLearningAgent(CaptureAgent):
     # Extracts the features for a given state and action pair under a given policy
     def getFeatures(self, gameState, action, tactic):
         if gameState.getAgentState(self.index).isPacman:
-            return self.getPacmanFeatures(gameState, action, self.index, tactic)
+            return self.getPacmanFeatures(gameState, action, self.index, tactic, flag=True)
         else:
-            return self.getPacmanFeatures(gameState, action, self.index, tactic)
+            return self.getGhostFeatures(gameState, action, self.index, tactic, flag=True)
 
-    def getPacmanFeatures(self, curState, action, index, tactic = "food_score"):
-        # FIXME probably should replace 30 with map size
+    def getPacmanFeatures(self, curState, action, index, tactic="food_score", flag=False):
         global agentIntentions
         features = util.Counter()
-        nextState = self.getNextState(curState, action)
+        ghost_distance = []
+        if flag:
+            nextState = self.getNextState(curState, action)
+        else:
+            nextState = curState.generateSuccessor(index, action)
         nextPos = nextState.getAgentPosition(index)
         opponentIndex = self.getEnemies(index)
+        ghostPos = []
+        pacmanPos = []
+        for oppo in opponentIndex:
+            if curState.getAgentState(oppo).isPacman is False:
+                ghostPos.append(curState.getAgentPosition(oppo))
+            else:
+                pacmanPos.append(curState.getAgentPosition(oppo))
         walls = curState.getWalls()
+        foodToEat = self.getFood(curState).asList()
+        if ghostPos:
+            ghost_distance = [minDist(oppo, nextPos) for oppo in ghostPos]
+            min_distance_ghost = min(ghost_distance)
+            features['is-ghosts-3-step-away'] = min_distance_ghost <= 3
+            # features['is-ghosts-2-step-away'] = min_distance <= 2
+            # features['is-ghosts-1-step-away'] = min_distance <= 1
         if tactic == "food_score":
-            return
-        elif tactic == "survival":
-            return
-        elif tactic == "defend_food":
-            return
+            food_distance = [minDist(food, nextPos) for food in foodToEat]
+            min_distance_to_food = min(food_distance)
+            features['min_distance_to_food'] = min_distance_to_food
+            features['eat_food'] = min_distance_to_food == 0
+            features['carry_food'] = self.carry_food
         elif tactic == "retreat":
             minDistance = self.maxMazeDistance
             subMinDistance = self.maxMazeDistance
@@ -496,24 +528,51 @@ class QLearningAgent(CaptureAgent):
                     elif distance < subMinDistance:
                         subMinDistance = distance
             if subMinDistance != self.maxMazeDistance:
-                features["average_distance_to_retreat"] = 30 / (0.7 * minDistance + 0.3 * subMinDistance + 1)
-        # TODO add avioding ghost features for all here
+                features["average_distance_to_retreat"] = 0.7 * minDistance + 0.3 * subMinDistance
+        elif tactic == "defend_food":
+            if pacmanPos:
+                minDistance = self.maxMazeDistance
+                subMinDistance = self.maxMazeDistance
+                x = self.getOwnBoarder(walls)
+                for y in range(walls.height):
+                    if walls[x][y] == 0:
+                        distance = minDist(nextPos, (x, y))
+                        if distance < minDistance:
+                            subMinDistance = minDistance
+                            minDistance = distance
+                        elif distance < subMinDistance:
+                            subMinDistance = distance
+                if subMinDistance != self.maxMazeDistance:
+                    features["average_distance_to_retreat"] = 0.7 * minDistance + 0.3 * subMinDistance
+                pacman_distance = [minDist(oppo, nextPos) for oppo in pacmanPos]
+                min_distance_pacman = min(pacman_distance)
+                features['min_distance_to_pacman'] = min_distance_pacman
+                features['average_distance_to_retreat'] = 0.7 * minDistance + 0.3 * subMinDistance
+                teammatePos = curState.getAgentPosition((self.index + 2) % 4)
+                features['distance_to_teammate'] = minDist(teammatePos, nextPos)
+        if ghost_distance:
+            features['is-ghosts-2-step-away'] = min_distance_ghost <= 2
+            features['is-ghosts-1-step-away'] = min_distance_ghost <= 1
+            features['min_distance_to_ghost'] = min_distance_ghost
         return features
 
-    def getGhostFeatures(self, curState, action, index, tactic = "chase_pacman"):
+    def getGhostFeatures(self, curState, action, index, tactic="chase_pacman", flag=False):
         # FIXME probably should replace 30 with map size
         global agentIntentions
         features = util.Counter()
-        nextState = self.getNextState(curState, action)
+        if flag:
+            nextState = self.getNextState(curState, action)
+        else:
+            nextState = curState.generateSuccessor(index, action)
         nextPos = nextState.getAgentPosition(index)
         opponentIndex = self.getEnemies(index)
         walls = curState.getWalls()
         if tactic == "chase_pacman":
-            features["closest_distance_to_target"] = 30 / (minDist(nextPos, agentIntentions[index]) + 1)
+            features["closest_distance_to_target"] = minDist(nextPos, agentIntentions[index])
         elif tactic == "block_pacman":
-            features["closest_distance_to_target"] = 30 / (minDist(nextPos, agentIntentions[index]) + 1)
+            features["closest_distance_to_target"] = minDist(nextPos, agentIntentions[index])
         elif tactic == "guard_exits":
-            return
+            return util.Counter()
         elif tactic == "patrol_boarder":
             # TODO add penalty for being too close to the boarder
             avgDistance = 0
@@ -524,15 +583,15 @@ class QLearningAgent(CaptureAgent):
                     i += 1
                     avgDistance += minDist(nextPos, (x, y))
             features["average_distance_to_exits"] = avgDistance / i
-            #for opponent in opponentIndex: TODO complete this
-
+            # for opponent in opponentIndex:
         elif tactic == "rush_to_food":
             minDistance = self.maxMazeDistance
-            x = self.getOwnBoarder(walls)
+            x = self.getOppoBoarder(walls)
             for y in range(walls.height):
                 if walls[x][y] == 0:
                     minDistance = min(minDistance, minDist(nextPos, (x, y)))
-            features["closest_distance_to_boarder"] = 30 / (minDistance + 1)
+            features["closest_distance_to_boarder"] = minDistance
+            print('-------------------\n', minDistance, action)
         return features
 
     def getTactics(self, curState, index):
@@ -567,14 +626,14 @@ class QLearningAgent(CaptureAgent):
                 nextLayerVtx.discard(agentPos)
                 exits = list(nextLayerVtx)
                 if len(exits) > 2:  # Pacman is at a crossing, and has neighbour vertices
-                # FIXME some repeating code here
+                    # FIXME some repeating code here
                     survivalRate = 20
                 elif len(exits) == 1:
                     survivalRate = min(minDist(opPos0, exits[0]),
                                        minDist(opPos1, exits[0])) - minDist(agentPos, exits[0])
                 elif len(exits) == 2:
                     survivalRate = min(minDist(opPos0, exits[0]) + minDist(opPos1, exits[1]),
-                                       minDist(opPos0, exits[1]) + minDist(opPos1, exits[0])) -\
+                                       minDist(opPos0, exits[1]) + minDist(opPos1, exits[0])) - \
                                    min(minDist(agentPos, exits[0]), minDist(agentPos, exits[1]))
             elif len(exits) > 2:  # Pacman is at a crossing, and has neighbour vertices
                 # We think we are safe
@@ -584,8 +643,9 @@ class QLearningAgent(CaptureAgent):
             elif len(exits) == 1:  # Pacman is in a dead end
                 survivalRate = min(minDist(opPos0, exits[0]), minDist(opPos1, exits[0])) - minDist(agentPos, exits[0])
             elif len(exits) == 2:  # Pacman is in a tunnel
-                survivalRate = min(minDist(opPos0, exits[0]) + minDist(opPos1, exits[1]), minDist(opPos0, exits[1]) +\
-                           minDist(opPos1, exits[0])) - min(minDist(agentPos, exits[0]), minDist(agentPos, exits[1]))
+                survivalRate = min(minDist(opPos0, exits[0]) + minDist(opPos1, exits[1]), minDist(opPos0, exits[1]) + \
+                                   minDist(opPos1, exits[0])) - min(minDist(agentPos, exits[0]),
+                                                                    minDist(agentPos, exits[1]))
             # Determine whether there is a ghost nearby
             if minDist(agentPos, opPos0) < self.dangerRange:
                 survivalRate -= 10
@@ -620,7 +680,7 @@ class QLearningAgent(CaptureAgent):
             # the retreat tactic
             # --------------------------------------------------------
             expectedReward = self.foodGain * self.carry_food
-            expectedReward += 3 * (self.beginningFood - len(curState.getFood().asList())) # Count eaten food as well
+            expectedReward += 3 * (self.beginningFood - len(curState.getFood().asList()))  # Count eaten food as well
             minDistance = 80  # This is set to prevent errors, and give some trustworthy information
             strictMinDistance = self.maxMazeDistance  # When pacman takes the risk to rush out from backup location
             evacuatePos = None
@@ -655,46 +715,46 @@ class QLearningAgent(CaptureAgent):
                     invaders.append(curState.getAgentPosition(opponent))
             if invaders:  # FIXME performs poorly when two enemies are invading
                 for invader in invaders:
-            # --------------------------------------------------------
-            # the dodging tactic  # TODO not implemented
-            # --------------------------------------------------------
+                    # --------------------------------------------------------
+                    # the dodging tactic  # TODO not implemented
+                    # --------------------------------------------------------
 
-            # --------------------------------------------------------
-            # the chasing tactic
-            # --------------------------------------------------------
+                    # --------------------------------------------------------
+                    # the chasing tactic
+                    # --------------------------------------------------------
                     invaderPos = invader
                     vertices = adjNode(invaderPos)
                     if minDist(agentPos, invaderPos) < self.captureExpect:
                         agentIntentions[index] = invaderPos
                         return "chase_pacman"
-                    elif len(vertices) == 1 :
+                    elif len(vertices) == 1:
                         diff = minDist(agentPos, vertices[0]) - minDist(invaderPos, vertices[0])
                         if diff < self.trapExpect:
                             agentIntentions[index] = vertices[0]
                             return "chase_pacman"
-            # --------------------------------------------------------
-            # the blocking tactic
-            # --------------------------------------------------------
+                    # --------------------------------------------------------
+                    # the blocking tactic
+                    # --------------------------------------------------------
                     elif len(vertices) == 2 and not curState.getAgentState(self.getTeamMate(index)).isPacman:
                         diff = self.maxMazeDistance
                         target = None
                         for vertex in vertices:
                             tmpDiff = minDist(agentPos, vertex) - minDist(invaderPos, vertex)
-                            if tmpDiff < diff and agentIntentions(self.getTeamMate(index)) != vertex:
+                            if tmpDiff < diff and agentIntentions[self.getTeamMate(index)] != vertex:
                                 diff = tmpDiff
                                 target = vertex
                         if diff < self.blockExpect:
                             agentIntentions[index] = target
                             return "block_pacman"
-            # --------------------------------------------------------
-            # the guarding tactic TODO probably too pessimistic, should encourage agent to be sometimes offensive
-            # --------------------------------------------------------
+                    # --------------------------------------------------------
+                    # the guarding tactic
+                    # --------------------------------------------------------
                     # The default and pessimistic single ghost defensive strategy
                     return "guard_exits"
             else:
-            # --------------------------------------------------------
-            # the patrolling tactic
-            # --------------------------------------------------------
+                # --------------------------------------------------------
+                # the patrolling tactic
+                # --------------------------------------------------------
                 foodLoss = self.foodRegret * (self.beginningFood - len(self.getOwnFood(curState).asList()))
                 minDistance = self.maxMazeDistance
                 x = self.getOwnBoarder(walls)
@@ -706,9 +766,9 @@ class QLearningAgent(CaptureAgent):
                 invadeRate = foodLoss + invadeChance
                 if invadeRate > self.TinvadeRate:
                     return "patrol_boarder"
-            # --------------------------------------------------------
-            # the rush_to_food tactic
-            # --------------------------------------------------------
+                # --------------------------------------------------------
+                # the rush_to_food tactic
+                # --------------------------------------------------------
                 # The default tactic for ghosts with no invaders
                 return "rush_to_food"
 
@@ -749,6 +809,8 @@ class QLearningAgent(CaptureAgent):
                 if cumulativeReward > bestReward:
                     bestReward = cumulativeReward
                     bestActions = tempActions
+                    # print(bestActions.list)
+                    # util.pause()
                 (priority, _, _) = fringe.peekPriority()
                 depthDiff = curDepth + priority
                 curDepth = -priority
@@ -803,7 +865,7 @@ class QLearningAgent(CaptureAgent):
                 nextState = nextStates[state][chosenAction]
 
                 # Determine whether to do a back track
-                if util.flipCoin(1 / exp(0.4 * (curDepth + self.bias))):
+                if util.flipCoin(1 / exp(.4 * (curDepth + self.bias))):
                     fringe.push(curState, -curDepth)
                 curDepth += 1
                 fringe.push(nextState, -curDepth)
@@ -828,11 +890,10 @@ class QLearningAgent(CaptureAgent):
                 maxQValue = max(self.getQValue(curState, action, tactic)[0], maxQValue)
             diff = abs(maxQValue - preQValue)
             if diff > self.tolerance or optimalAction not in legalActions:
-                print("situation changed")  # FIXME for debug purpose
                 self.MCTS(curState)
             else:
                 self.pre_state = curState
-                agentActions[self.index] = self.actionsChosen.peekItem()
                 return optimalAction
         self.pre_state = curState
-        return self.actionsChosen.pop()[0]
+        optimalAction = self.actionsChosen.pop()[0]
+        return optimalAction
