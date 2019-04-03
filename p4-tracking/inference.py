@@ -75,7 +75,11 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        if self.keys() is None:
+            return
+        total_sum = self.total()
+        for key in self:
+            self[key] /= total_sum
 
     def sample(self):
         """
@@ -99,8 +103,13 @@ class DiscreteDistribution(dict):
         0.0
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
-
+        prob = random.random() * self.total()
+        cumulative_sum = .0
+        for key in self: 
+            if cumulative_sum <= prob < cumulative_sum + self[key]:
+                return key 
+            cumulative_sum += self[key]
+        print("\033[31mshould not reach here!\033[0m")
 
 class InferenceModule:
     """
@@ -169,7 +178,14 @@ class InferenceModule:
         Return the probability P(noisyDistance | pacmanPosition, ghostPosition).
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        if ghostPosition == jailPosition and noisyDistance is None:
+            return 1
+        if noisyDistance is not None and ghostPosition == jailPosition:
+            return 0
+        if noisyDistance is not None:
+            distance = manhattanDistance(pacmanPosition, ghostPosition)
+            return busters.getObservationProbability(noisyDistance, distance)
+        return 0
 
     def setGhostPosition(self, gameState, ghostPosition, index):
         """
@@ -277,8 +293,12 @@ class ExactInference(InferenceModule):
         position is known.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
-
+        #self.beliefs.normalize()
+        pacman_position = gameState.getPacmanPosition()
+        jail_position = self.getJailPosition()
+        for ghost_position in self.allPositions:
+            self.beliefs[ghost_position] = self.getObservationProb(observation, pacman_position,
+                                           ghost_position, jail_position)
         self.beliefs.normalize()
 
     def elapseTime(self, gameState):
