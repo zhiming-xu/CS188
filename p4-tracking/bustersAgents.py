@@ -146,26 +146,17 @@ class GreedyBustersAgent(BustersAgent):
         "*** YOUR CODE HERE ***"
         targets = [ghost_position.argMax() for ghost_position in\
                    livingGhostPositionDistributions]
-        action_distances = util.Counter()
-        for action in legal:
-            new_pos = Actions.getSuccessor(pacmanPosition, action)
-            distances = [self.distancer.getDistance(new_pos, target) for\
-                         target in targets]
-            action_distances[action] = min(distances)
-        return min(action_distances)
-        '''
-        distances = util.Counter()
+        target_distances = util.Counter()
+        true_target = targets[0]
         for target in targets:
-            distances[target] = self.distancer.getDistance(pacmanPosition, target)
-        for target in targets:
-            if target == min(distances):
+            target_distances[target] = self.distancer.getDistance(pacmanPosition, target)
+            if target_distances[true_target] > target_distances[target]:
                 true_target = target
-                break
-        result_distances = util.Counter()
+        action_distances = util.Counter()
+        best_action = legal[0]
         for action in legal:
             new_pos = Actions.getSuccessor(pacmanPosition, action)
-            result_distances[action] = self.distancer.getDistance(new_pos, true_target)
-        for action in result_distances:
-            if action == min(result_distances):
-                return action
-        '''
+            action_distances[action] = self.distancer.getDistance(new_pos, true_target)
+            if action_distances[best_action] > action_distances[action]:
+                best_action = action
+        return best_action
