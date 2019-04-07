@@ -75,9 +75,9 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
-        if self.keys() is None:
-            return
         total_sum = self.total()
+        if self.keys() is None or total_sum == 0:
+            return
         for key in self:
             self[key] /= total_sum
 
@@ -182,7 +182,7 @@ class InferenceModule:
             return 1
         if noisyDistance is not None and ghostPosition == jailPosition:
             return 0
-        if noisyDistance is not None:
+        if noisyDistance is not None and ghostPosition != jailPosition:
             distance = manhattanDistance(pacmanPosition, ghostPosition)
             return busters.getObservationProbability(noisyDistance, distance)
         return 0
@@ -293,12 +293,11 @@ class ExactInference(InferenceModule):
         position is known.
         """
         "*** YOUR CODE HERE ***"
-        #self.beliefs.normalize()
         pacman_position = gameState.getPacmanPosition()
         jail_position = self.getJailPosition()
         for ghost_position in self.allPositions:
-            self.beliefs[ghost_position] = self.getObservationProb(observation, pacman_position,
-                                           ghost_position, jail_position)
+            self.beliefs[ghost_position] *= self.getObservationProb(observation, pacman_position,
+                                            ghost_position, jail_position)
         self.beliefs.normalize()
 
     def elapseTime(self, gameState):
@@ -311,7 +310,13 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        new_prob = DiscreteDistribution()
+        for position in self.allPositions:
+            new_pos_dist = self.getPositionDistribution(gameState, position)
+            for pos in new_pos_dist:
+                new_prob[pos] += new_pos_dist[pos] * self.beliefs[position]
+        new_prob.normalize()
+        self.beliefs = new_prob
 
     def getBeliefDistribution(self):
         return self.beliefs
