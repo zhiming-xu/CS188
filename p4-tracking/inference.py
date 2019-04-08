@@ -17,7 +17,7 @@ import random
 import busters
 import game
 
-from util import manhattanDistance, raiseNotDefined
+from util import manhattanDistance, raiseNotDefined, Counter
 
 
 class DiscreteDistribution(dict):
@@ -343,7 +343,9 @@ class ParticleFilter(InferenceModule):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        for i in range(self.numParticles):
+            self.particles.append(self.legalPositions[i%len(self.legalPositions)])
+        random.shuffle(self.particles)
 
     def observeUpdate(self, observation, gameState):
         """
@@ -358,7 +360,20 @@ class ParticleFilter(InferenceModule):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        pacman_position = gameState.getPacmanPosition()
+        jail_position = self.getJailPosition()
+        predictions = self.getBeliefDistribution()
+        for ghost_position in self.allPositions:
+            predictions[ghost_position] *= self.getObservationProb(observation, pacman_position,
+                                           ghost_position, jail_position)
+        if predictions.total() == 0:
+            self.initializeUniformly(gameState)
+            return
+        predictions.normalize()
+        new_samples = []
+        for _ in range(self.numParticles):
+            new_samples.append(predictions.sample())
+        self.particles = new_samples
 
     def elapseTime(self, gameState):
         """
@@ -366,7 +381,11 @@ class ParticleFilter(InferenceModule):
         gameState.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        new_samples = []
+        for particle in self.particles:
+            new_position_dist = self.getPositionDistribution(gameState, particle)
+            new_samples.append(new_position_dist.sample())
+        self.particles = new_samples
 
     def getBeliefDistribution(self):
         """
@@ -377,8 +396,11 @@ class ParticleFilter(InferenceModule):
         This function should return a normalized distribution.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
-
+        belief_distribution = DiscreteDistribution()
+        for particle in self.particles:
+            belief_distribution[particle] += 1
+        belief_distribution.normalize()
+        return belief_distribution
 
 class JointParticleFilter(ParticleFilter):
     """
@@ -405,7 +427,12 @@ class JointParticleFilter(ParticleFilter):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        samples = self.legalPositions
+        for _ in range(self.numGhosts - 1):
+            samples = itertools.product(samples, self.legalPositions)
+        samples = list(samples)
+        random.shuffle(samples)
+        self.particles = samples[0 : self.numParticles]
 
     def addGhostAgent(self, agent):
         """
@@ -438,7 +465,33 @@ class JointParticleFilter(ParticleFilter):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        pacman_position = gameState.getPacmanPosition()
+        ghost_samples = Counter()
+        zero_num = 0
+        for i in range(self.numGhosts):
+            jail_position = self.getJailPosition(i)
+            predictions = self.getBeliefDistribution()
+            for ghost_position in self.legalPositions:
+                predictions[ghost_position] *= self.getObservationProb(observation, pacman_position,
+                                               ghost_position, jail_position)
+            if predictions.total() == 0:
+                zero_num += 1
+            predictions.normalize()
+            new_samples = []
+            for _ in range(self.numParticles):
+                new_samples.append(predictions.sample())
+            ghost_samples[i] = new_samples
+        # special case handle
+        if zero_num == self.numGhosts:
+            self.initializeUniformly(gameState)
+            return
+        new_samples = []
+        for idx in range(self.numParticles):
+            sample_idx = []
+            for ghost in ghost_samples:
+                sample_idx.append(ghost_samples[ghost][idx])
+            new_samples.append(sample_idx)
+        self.particles = new_samples
 
     def elapseTime(self, gameState):
         """
