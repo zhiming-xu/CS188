@@ -27,6 +27,7 @@ class PerceptronModel(object):
         Returns: a node containing a single number (the score)
         """
         "*** YOUR CODE HERE ***"
+        return nn.DotProduct(self.w, x)
 
     def get_prediction(self, x):
         """
@@ -35,13 +36,24 @@ class PerceptronModel(object):
         Returns: 1 or -1
         """
         "*** YOUR CODE HERE ***"
+        prod = nn.as_scalar(self.run(x))
+        return (prod >= 0) - (prod < 0)
 
     def train(self, dataset):
         """
         Train the perceptron until convergence.
         """
         "*** YOUR CODE HERE ***"
-
+        batch_size = 1
+        change_flag = True
+        while change_flag:
+            change_flag = False
+            for x, y in dataset.iterate_once(batch_size):
+                result = self.get_prediction(x)
+                if result != nn.as_scalar(y):
+                    self.w.update(nn.Constant(nn.as_scalar(y)*x.data), 1)
+                    change_flag = True
+            
 class RegressionModel(object):
     """
     A neural network model for approximating a function that maps from real
@@ -51,6 +63,7 @@ class RegressionModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.w = nn.Parameter(1, 1)
 
     def run(self, x):
         """
@@ -62,6 +75,7 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
+        return nn.DotProduct(x, self.w)
 
     def get_loss(self, x, y):
         """
@@ -74,12 +88,21 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        y_hat = self.run(x)
+        return nn.SquareLoss(y_hat, y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        batch_size = 10
+        loss = float('inf')
+        while loss >= .2:
+            for x, y in dataset.iterate_once(batch_size):
+                y_hat = self.run(x)
+                loss = self.get_loss(x, y)
+                self.w.update(nn.Constant(2*x.data*(y_hat-y)), 1)
 
 class DigitClassificationModel(object):
     """
