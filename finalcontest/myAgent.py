@@ -15,11 +15,10 @@
 
 
 from captureAgents import CaptureAgent
-import random, time, util
-from game import Directions
+import random, time, util, sys, heapq
+from game import Directions, Actions
 import game
 from util import nearestPoint
-
 
 ##########
 # Global #
@@ -154,65 +153,70 @@ def elegant_search(cur_state):
                         dist_map[cur_pos][position] = dist_map[position][cur_pos] = distance
     closed.clear()
 
+
 #########
 # Agent #
 #########
 class MyAgent(CaptureAgent):
-  """
-  YOUR DESCRIPTION HERE
-  """
-
-  def registerInitialState(self, gameState):
     """
-    This method handles the initial setup of the
-    agent to populate useful fields (such as what team
-    we're on).
-
-    A distanceCalculator instance caches the maze distances
-    between each pair of positions, so your agents can use:
-    self.distancer.getDistance(p1, p2)
-
-    IMPORTANT: This method may run for at most 15 seconds.
+    YOUR DESCRIPTION HERE
+    Re-planning agent that attempts to find a desirable sequence of actions
+    for the next 20 steps at each time step.
     """
 
-    # Make sure you do not delete the following line. 
-    # If you would like to use Manhattan distances instead 
-    # of maze distances in order to save on initialization 
-    # time, please take a look at:
-    # CaptureAgent.registerInitialState in captureAgents.py.
-    CaptureAgent.registerInitialState(self, gameState)
-    self.start = gameState.getAgentPosition(self.index)
+    def registerInitialState(self, gameState):
+        """
+        This method handles the initial setup of the
+        agent to populate useful fields (such as what team
+        we're on).
 
-  def chooseAction(self, gameState):
-    """
-    Picks among actions randomly.
-    """
-    teammateActions = self.receivedBroadcast
-    # Process your teammate's broadcast! 
-    # Use it to pick a better action for yourself
+        A distanceCalculator instance caches the maze distances
+        between each pair of positions, so your agents can use:
+        self.distancer.getDistance(p1, p2)
 
-    actions = gameState.getLegalActions(self.index)
+        IMPORTANT: This method may run for at most 15 seconds.
+        """
 
-    filteredActions = actionsWithoutReverse(actionsWithoutStop(actions), gameState, self.index)
+        # Make sure you do not delete the following line.
+        # If you would like to use Manhattan distances instead
+        # of maze distances in order to save on initialization
+        # time, please take a look at:
+        # CaptureAgent.registerInitialState in captureAgents.py.
+        CaptureAgent.registerInitialState(self, gameState)
+        self.start = gameState.getAgentPosition(self.index)
 
-    currentAction = random.choice(actions) # Change this!
-    return currentAction
+    def chooseAction(self, gameState):
+        """
+        Picks among actions randomly.
+        """
+        teammateActions = self.receivedBroadcast
+        # Process your teammate's broadcast!
+        # Use it to pick a better action for yourself
+
+        actions = gameState.getLegalActions(self.index)
+
+        filteredActions = actionsWithoutReverse(actionsWithoutStop(actions), gameState, self.index)
+
+        currentAction = random.choice(actions) # Change this!
+        return currentAction
+
 
 def actionsWithoutStop(legalActions):
-  """
-  Filters actions by removing the STOP action
-  """
-  legalActions = list(legalActions)
-  if Directions.STOP in legalActions:
-    legalActions.remove(Directions.STOP)
-  return legalActions
+    """
+    Filters actions by removing the STOP action
+    """
+    legalActions = list(legalActions)
+    if Directions.STOP in legalActions:
+        legalActions.remove(Directions.STOP)
+    return legalActions
+
 
 def actionsWithoutReverse(legalActions, gameState, agentIndex):
-  """
-  Filters actions by removing REVERSE, i.e. the opposite action to the previous one
-  """
-  legalActions = list(legalActions)
-  reverse = Directions.REVERSE[gameState.getAgentState(agentIndex).configuration.direction]
-  if len (legalActions) > 1 and reverse in legalActions:
-    legalActions.remove(reverse)
-  return legalActions
+    """
+    Filters actions by removing REVERSE, i.e. the opposite action to the previous one
+    """
+    legalActions = list(legalActions)
+    reverse = Directions.REVERSE[gameState.getAgentState(agentIndex).configuration.direction]
+    if len (legalActions) > 1 and reverse in legalActions:
+        legalActions.remove(reverse)
+    return legalActions
