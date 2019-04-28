@@ -100,58 +100,61 @@ def closest_distance(pos1, pos2):
 
 
 def elegant_search(cur_state):
-    walls = cur_state.getWalls()
-    fringe = Deque()
-    closed = set()
-    pos = cur_state.getAgentPosition(0)
-    fringe.push(pos)
-    while fringe.is_empty() is False:
-        cur_pos = fringe.pop()
-        cur_oppo_pos = (walls.width - cur_pos[0] - 1, walls.height - cur_pos[1] - 1)
-        closed.add(cur_pos)
+	walls = cur_state.getWalls()
+	fringe = Deque()
+	closed = set()
+	pos = cur_state.getAgentPosition(0)
+	fringe.push(pos)
+	for x in range(walls.width):
+		for y in range(walls.height):
+			dist_map[(x, y)] = util.Counter()
+	while fringe.is_empty() is False:
+		cur_pos = fringe.pop()
+		cur_oppo_pos = (walls.width - cur_pos[0] - 1, walls.height - cur_pos[1] - 1)
+		closed.add(cur_pos)
 
-    # Calculate distances within half of the map
-        neighbours = Actions.getLegalNeighbors(cur_pos, walls)
-        for neighbour in neighbours:
-            if neighbour not in closed and neighbour[0] < round(walls.width / 2):
-                fringe.push(neighbour)
-        positions = set()
-        for pos_x in range(round(walls.width / 2)):
-            for pos_y in range(walls.height):
-                if walls[pos_x][pos_y] == 0:
-                    positions.add((pos_x, pos_y))
-        for position in positions:
-            if position not in closed:
-                oppo_position = (walls.width - position[0] - 1, walls.height - position[1] - 1)
-                dist_map[cur_pos][position] = dist_map[position][cur_pos] = \
-                    dist_map[cur_oppo_pos][oppo_position] = dist_map[oppo_position][cur_oppo_pos] = \
-                    breadth_first_search(cur_pos, position, walls)
-    closed.clear()
+		# Calculate distances within half of the map
+		neighbours = Actions.getLegalNeighbors(cur_pos, walls)
+		for neighbour in neighbours:
+			if neighbour not in closed and neighbour[0] < round(walls.width / 2):
+				fringe.push(neighbour)
+		positions = set()
+		for pos_x in range(round(walls.width / 2)):
+			for pos_y in range(walls.height):
+				if walls[pos_x][pos_y] == 0:
+					positions.add((pos_x, pos_y))
+		for position in positions:
+			if position not in closed:
+				oppo_position = (walls.width - position[0] - 1, walls.height - position[1] - 1)
+				dist_map[cur_pos][position] = dist_map[position][cur_pos] = \
+					dist_map[cur_oppo_pos][oppo_position] = dist_map[oppo_position][cur_oppo_pos] = \
+					breadth_first_search(cur_pos, position, walls)
+	closed.clear()
 
-    # Calculate distances between points that are in different colors
-    x = round(walls.width / 2) - 1
-    for y in range(walls.height):
-        if walls[x][y] != 0:
-            continue
-        fringe.push(pos)
-        while fringe.is_empty() is False:
-            cur_pos = fringe.pop()
-            closed.add(cur_pos)
-            neighbours = Actions.getLegalNeighbors(cur_pos, walls)
-            for neighbour in neighbours:
-                if neighbour not in closed:
-                    fringe.push(neighbour)
-            positions = set()
-            for pos_x in range(round(walls.width / 2), walls.width):
-                for pos_y in range(walls.height):
-                    if walls[pos_x][pos_y] == 0:
-                        positions.add((pos_x, pos_y))
-            for position in positions:
-                if position not in closed:
-                    distance = dist_map[cur_pos][(x, y)] + dist_map[(x + 1, y)][position] + 1
-                    if dist_map[cur_pos][position] == 0 or distance < dist_map[cur_pos][position]:
-                        dist_map[cur_pos][position] = dist_map[position][cur_pos] = distance
-    closed.clear()
+	# Calculate distances between points that are in different colors
+	x = round(walls.width / 2) - 1
+	for y in range(walls.height):
+		if walls[x][y] != 0:
+			continue
+		fringe.push(pos)
+		while fringe.is_empty() is False:
+			cur_pos = fringe.pop()
+			closed.add(cur_pos)
+			neighbours = Actions.getLegalNeighbors(cur_pos, walls)
+			for neighbour in neighbours:
+				if neighbour not in closed:
+					fringe.push(neighbour)
+			positions = set()
+			for pos_x in range(round(walls.width / 2), walls.width):
+				for pos_y in range(walls.height):
+					if walls[pos_x][pos_y] == 0:
+						positions.add((pos_x, pos_y))
+			for position in positions:
+				if position not in closed:
+					distance = dist_map[cur_pos][(x, y)] + dist_map[(x + 1, y)][position] + 1
+					if dist_map[cur_pos][position] == 0 or distance < dist_map[cur_pos][position]:
+						dist_map[cur_pos][position] = dist_map[position][cur_pos] = distance
+	closed.clear()
 
 
 #########
