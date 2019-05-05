@@ -215,25 +215,13 @@ class MyAgent(CaptureAgent):
 		self.time_interval = 0.9
 		self.depth = 8
 		self.stats = util.Counter()
-		self.best_path = []
-		self.best_reward = float("-inf")
-		self.last_key = "Tail"
-		self.cur_plan = []
 		self.stats["Root"] = MCTNodes()
-
-	def reset_search(self):
-		self.stats = util.Counter()
-		self.best_path = []
-		self.best_reward = float("-inf")
-		self.last_key = "Tail"
-		self.cur_plan = []
 
 	def search(self, root_key, root_node, depth, team_plan):
 		cur_key = root_key
 		cur_node = root_node
 		path = []
 		rewards = []
-		self.cur_plan = team_plan
 		for i in range(depth):
 			# Extracting self_pos from current tree node to compare previous simulation and teammate's new actions
 			cur_self_pos = cur_node.get_self_pos()
@@ -243,11 +231,10 @@ class MyAgent(CaptureAgent):
 			# Generate the children of the current node
 			for action in legal_actions:
 				new_key = self.make_key(cur_key, cur_node.get_self_pos, team_plan[i])
-				if self.stats[new_key] == 0:
-					# Extract remaining values from current tree node to compute q-value
-					cur_team_pos = cur_node.get_team_pos()
-					cur_ghost_pos = cur_node.get_ghost_pos()
-					cur_food = cur_node.get_food()
+				# Extract remaining values from current tree node to compute q-value
+				cur_team_pos = cur_node.get_team_pos()
+				cur_ghost_pos = cur_node.get_ghost_pos()
+				cur_food = cur_node.get_food()
 				# TODO extract features, simulate new game state and compute q-value
 				# TODO create new node
 				# self.stats[new_key] = MCTNodes(new_state_values)
@@ -273,12 +260,12 @@ class MyAgent(CaptureAgent):
 		ghost_pos = cur_state.getAgentPosition(self.ghost_index)
 		food = cur_state.getAgentState(self.self_index).getFood().asList()
 
-		# Compare previous simulation and current state
-		if (team_pos, ghost_pos) != self.stats["Root"] or team_plan != self.cur_plan:
-			self.reset_search()
-			self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
+		self.stats = util.Counter()
+		self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
 
 		# Main search loop
+		best_path = []
+		best_reward = float("-inf")
 		flag = True
 		while flag:
 			# MCT nodes expanding process
@@ -286,18 +273,12 @@ class MyAgent(CaptureAgent):
 
 			# Compare the current best path and the newly found path
 			weighted_reward = self.compute_reward(rewards)
-			if self.best_reward < weighted_reward:
-				self.best_path = path
-				self.best_reward = weighted_reward
-				self.last_key = cur_key
+			if best_reward < weighted_reward:
+				best_path = path
+				best_reward = weighted_reward
 			if time.time() - start_time >= self.time_interval:
 				flag = False
-		return self.best_path[0]
-
-	def elapse_time(self, team_plan):
-		next_action = self.best_path.pop(0)
-		# FIXME
-		self.stats["Root"] = self.stats[self.make_key("Root", next_action, team_plan[0])]
+		return best_path[0]
 
 	def get_legal_actions(self, pos):
 		legal_actions = ["North", "South", "Eest", "Wast"]
