@@ -16,9 +16,8 @@
 
 from captureAgents import CaptureAgent
 import random, time, util, sys, heapq
-from game import Directions, Actions, LEGAL_DIRECTIONS
-import game
-from util import nearestPoint
+from game import Directions, Actions
+import numpy as np
 
 ##########
 # Global #
@@ -196,22 +195,20 @@ class MyAgent(CaptureAgent):
 		self.weights['is_ghost_1_step_away'] = -3
 		self.weights['is_ghost_2_step_away'] = -2
 		self.weights['distance_to_teammate'] = 1
-		# self.register_search()
+
+		team_index = self.getTeam(gameState)
+		team_index.remove(self.index)
+		ghost_index = self.getOpponents(gameState)
+		walls = gameState.getWalls()
+		self.register_search(self.index, team_index[0], ghost_index[0], walls)
 
 	def chooseAction(self, gameState):
 		"""
 		Picks among actions randomly.
 		"""
 		teammateActions = self.receivedBroadcast
-		# Process your teammate's broadcast!
-		# Use it to pick a better action for yourself
-
-		actions = gameState.getLegalActions(self.index)
-
-		filteredActions = actionsWithoutReverse(actionsWithoutStop(actions), gameState, self.index)
-
-		currentAction = random.choice(actions)  # Change this!
-		return currentAction
+		self.depth = min(self.depth, len(teammateActions))
+		return self.choose_action(gameState, teammateActions[:self.depth])
 
 	def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action):
 		features = util.Counter()
@@ -250,7 +247,7 @@ class MyAgent(CaptureAgent):
 		# distance to my teammate
 		features['distance_to_teammate'] = closest_distance(my_next_pos, team_pos)
 		qvalue = features * self.weights
-		return my_next_pos, team_next_pos, ghost_next_pos, qvalue
+		return my_next_pos, team_next_pos, ghost_next_pos, qvalue, features['eat_food']
 
 
 	def register_search(self, self_index, team_index, ghost_index, walls):
@@ -273,11 +270,11 @@ class MyAgent(CaptureAgent):
 			# Extracting self_pos from current tree node to compare previous simulation and teammate's new actions
 			cur_self_pos = cur_node.get_self_pos()
 			legal_actions = self.get_legal_actions(cur_self_pos)
-			children = set()
+			children = []
 
 			# Generate the children of the current node
 			for action in legal_actions:
-				new_key = self.make_key(cur_key, cur_node.get_self_pos, team_plan[i])
+				new_key = self.make_key(cur_key, action, team_plan[i])
 				# Extract remaining values from current tree node to compute q-value
 				cur_team_pos = cur_node.get_team_pos()
 				cur_ghost_pos = cur_node.get_ghost_pos()
@@ -285,28 +282,32 @@ class MyAgent(CaptureAgent):
 				# broadcast actions might be illegal
 				try:
 					tmp_team_pos = cur_team_pos
-					for action in self.receivedBroadcast[:8]:
+					for action in self.receivedBroadcast[:depth]:
 						tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
 						if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
 							cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
 				except:
 					print('in remove food, broadcast action is illegal!')
 
-				# TODO extract features, simulate new game state and compute q-value
-				# TODO create new node
-				next_self_pos, next_team_pos, next_ghost_pos, qvalue = \
-					self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, cur_food, action)
-				# self.stats[new_key] = MCTNodes(new_state_values)
-				children.add((action, new_key))
+				params = self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, cur_food, action)
+				self.stats[new_key] = MCTNodes(*params)
+				children.append((action, new_key))
 
 			# Pick the next action
-			for next_action, child_key in children:
-				# TODO softmax
-				# TODO pick a child node to expand
-				# cur_key = child_key
-				# cur_node = self.stats[child_key]
-				path.append(next_action)
-				rewards.append(cur_node.eats_pallet())
+			values = np.array([self.stats[key].get_value() for _, key in children])
+			values = list(np.exp(values) / np.exp(values).sum())
+			prob = np.random.rand()
+			cum_sum, idx = 0, 0
+			for idx in range(len(values)):
+				if cum_sum <= prob < cum_sum + values[idx]:
+					break
+				else:
+					cum_sum += values[idx]
+			best_child = children[idx]
+			cur_key = best_child[1]
+			cur_node = self.stats[cur_key]
+			path.append(best_child[0])
+			rewards.append(self.stats[cur_key].eats_pellet())
 		return path, rewards, cur_key
 
 	def choose_action(self, cur_state, team_plan):
@@ -317,7 +318,7 @@ class MyAgent(CaptureAgent):
 		self_pos = cur_state.getAgentPosition(self.self_index)
 		team_pos = cur_state.getAgentPosition(self.team_index)
 		ghost_pos = cur_state.getAgentPosition(self.ghost_index)
-		food = cur_state.getAgentState(self.self_index).getFood().asList()
+		food = cur_state.getFood().asList()
 
 		self.stats = util.Counter()
 		self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
@@ -340,7 +341,7 @@ class MyAgent(CaptureAgent):
 		return best_path[0]
 
 	def get_legal_actions(self, pos):
-		legal_actions = ["North", "South", "Eest", "Wast"]
+		legal_actions = ["North", "South", "East", "West"]
 		# Check if North is available
 		if pos[1] == self.walls.height - 2:
 			legal_actions.remove("North")
@@ -380,14 +381,15 @@ class MyAgent(CaptureAgent):
 				sum += self.discounts ** i
 		return sum
 
+
 class MCTNodes:
-	def __init__(self, self_pos=(), team_pos=(), ghost_pos=(), food=(), value=0, pallet=0):
+	def __init__(self, self_pos=(), team_pos=(), ghost_pos=(), food=(), value=0, pellet=0):
 		self.self_pos = self_pos
 		self.team_pos = team_pos
 		self.ghost_pos = ghost_pos
 		self.food = food
 		self.value = value
-		self.pallet = pallet
+		self.pellet = pellet
 
 	def __eq__(self, other):
 		return self.team_pos == other[0] and self.ghost_pos == other[1]
@@ -407,8 +409,8 @@ class MCTNodes:
 	def get_value(self):
 		return self.value
 
-	def eats_pallet(self):
-		return self.pallet
+	def eats_pellet(self):
+		return self.pellet
 
 
 def actionsWithoutStop(legalActions):
