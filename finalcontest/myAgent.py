@@ -16,7 +16,7 @@
 
 from captureAgents import CaptureAgent
 import random, time, util, sys, heapq
-from game import Directions, Actions
+from game import Directions, Actions, LEGAL_DIRECTIONS
 import game
 from util import nearestPoint
 
@@ -25,78 +25,79 @@ from util import nearestPoint
 ##########
 dist_map = util.Counter()
 
+
 ##########
 # Helper #
 ##########
 class Deque:
-    def __init__(self):
-        self.list = []
+	def __init__(self):
+		self.list = []
 
-    def push(self, item):
-        self.list.insert(0, item)
+	def push(self, item):
+		self.list.insert(0, item)
 
-    def pop(self):
-        return self.list.pop()
+	def pop(self):
+		return self.list.pop()
 
-    def pop_back(self):
-        return self.list.pop(0)
+	def pop_back(self):
+		return self.list.pop(0)
 
-    def peek_item(self):
-        return self.list[0]
+	def peek_item(self):
+		return self.list[0]
 
-    def is_empty(self):
-        return len(self.list) == 0
+	def is_empty(self):
+		return len(self.list) == 0
 
 
 class PriorityQueue:
-    def __init__(self):
-        self.heap = []
-        self.count = 0
+	def __init__(self):
+		self.heap = []
+		self.count = 0
 
-    def push(self, item, priority):
-        entry = (priority, self.count, item)
-        heapq.heappush(self.heap, entry)
-        self.count += 1
+	def push(self, item, priority):
+		entry = (priority, self.count, item)
+		heapq.heappush(self.heap, entry)
+		self.count += 1
 
-    def pop(self):
-        (_, _, item) = heapq.heappop(self.heap)
-        return item
+	def pop(self):
+		(_, _, item) = heapq.heappop(self.heap)
+		return item
 
-    def peek_priority(self):
-        return min(self.heap)
+	def peek_priority(self):
+		return min(self.heap)
 
 
 def breadth_first_search(pos, target, walls):
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find target at this location then exit
-        if pos_x == target[0] and pos_y == target[1]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        neighbours = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in neighbours:
-            fringe.append((nbr_x, nbr_y, dist + 1))
-    # no path found
-    return None
+	fringe = [(pos[0], pos[1], 0)]
+	expanded = set()
+	while fringe:
+		pos_x, pos_y, dist = fringe.pop(0)
+		if (pos_x, pos_y) in expanded:
+			continue
+		expanded.add((pos_x, pos_y))
+		# if we find target at this location then exit
+		if pos_x == target[0] and pos_y == target[1]:
+			return dist
+		# otherwise spread out from the location to its neighbours
+		neighbours = Actions.getLegalNeighbors((pos_x, pos_y), walls)
+		for nbr_x, nbr_y in neighbours:
+			fringe.append((nbr_x, nbr_y, dist + 1))
+	# no path found
+	return None
 
 
 def closest_food(pos, food):
-    food_list = food.asList()
-    if len(food_list) == 0:
-        return None
-    min_distance = float("inf")
-    for foodLoc in food_list:
-        min_distance = min(min_distance, dist_map[pos][foodLoc])
-    return min_distance
+	food_list = food.asList()
+	if len(food_list) == 0:
+		return None
+	min_distance = float("inf")
+	for foodLoc in food_list:
+		min_distance = min(min_distance, dist_map[pos][foodLoc])
+	return min_distance
 
 
 def closest_distance(pos1, pos2):
-    return dist_map[pos1][pos2]
+	return dist_map[pos1][pos2]
 
 
 def elegant_search(cur_state):
@@ -157,69 +158,235 @@ def elegant_search(cur_state):
 	closed.clear()
 
 
-#########
-# Agent #
-#########
+##########
+# Agents #
+##########
 class MyAgent(CaptureAgent):
-    """
-    YOUR DESCRIPTION HERE
-    Re-planning agent that attempts to find a desirable sequence of actions
-    for the next 20 steps at each time step.
-    """
+	"""
+	YOUR DESCRIPTION HERE
+	Re-planning agent that attempts to find a desirable sequence of actions
+	for the next 20 steps at each time step.
+	"""
 
-    def registerInitialState(self, gameState):
-        """
-        This method handles the initial setup of the
-        agent to populate useful fields (such as what team
-        we're on).
+	def registerInitialState(self, gameState):
+		"""
+		This method handles the initial setup of the
+		agent to populate useful fields (such as what team
+		we're on).
 
-        A distanceCalculator instance caches the maze distances
-        between each pair of positions, so your agents can use:
-        self.distancer.getDistance(p1, p2)
+		A distanceCalculator instance caches the maze distances
+		between each pair of positions, so your agents can use:
+		self.distancer.getDistance(p1, p2)
 
-        IMPORTANT: This method may run for at most 15 seconds.
-        """
+		IMPORTANT: This method may run for at most 15 seconds.
+		"""
 
-        # Make sure you do not delete the following line.
-        # If you would like to use Manhattan distances instead
-        # of maze distances in order to save on initialization
-        # time, please take a look at:
-        # CaptureAgent.registerInitialState in captureAgents.py.
-        CaptureAgent.registerInitialState(self, gameState)
-        self.start = gameState.getAgentPosition(self.index)
+		# Make sure you do not delete the following line.
+		# If you would like to use Manhattan distances instead
+		# of maze distances in order to save on initialization
+		# time, please take a look at:
+		# CaptureAgent.registerInitialState in captureAgents.py.
+		CaptureAgent.registerInitialState(self, gameState)
+		self.start = gameState.getAgentPosition(self.index)
+		# TODO fill in parameters of register_search()
+		# self.register_search()
 
-    def chooseAction(self, gameState):
-        """
-        Picks among actions randomly.
-        """
-        teammateActions = self.receivedBroadcast
-        # Process your teammate's broadcast!
-        # Use it to pick a better action for yourself
+	def chooseAction(self, gameState):
+		"""
+		Picks among actions randomly.
+		"""
+		teammateActions = self.receivedBroadcast
+		# Process your teammate's broadcast!
+		# Use it to pick a better action for yourself
 
-        actions = gameState.getLegalActions(self.index)
+		actions = gameState.getLegalActions(self.index)
 
-        filteredActions = actionsWithoutReverse(actionsWithoutStop(actions), gameState, self.index)
+		filteredActions = actionsWithoutReverse(actionsWithoutStop(actions), gameState, self.index)
 
-        currentAction = random.choice(actions) # Change this!
-        return currentAction
+		currentAction = random.choice(actions)  # Change this!
+		return currentAction
+
+	def register_search(self, self_index, team_index, ghost_index, walls):
+		self.self_index = self_index
+		self.team_index = team_index
+		self.ghost_index = ghost_index
+		self.walls = walls
+		self.discounts = 0.9
+		self.time_interval = 0.9
+		self.depth = 8
+		self.stats = util.Counter()
+		self.best_path = []
+		self.best_reward = float("-inf")
+		self.last_key = "Tail"
+		self.cur_plan = []
+		self.stats["Root"] = MCTNodes()
+
+	def reset_search(self):
+		self.stats = util.Counter()
+		self.best_path = []
+		self.best_reward = float("-inf")
+		self.last_key = "Tail"
+		self.cur_plan = []
+
+	def search(self, root_key, root_node, depth, team_plan):
+		cur_key = root_key
+		cur_node = root_node
+		path = []
+		rewards = []
+		self.cur_plan = team_plan
+		for i in range(depth):
+			# Extracting self_pos from current tree node to compare previous simulation and teammate's new actions
+			cur_self_pos = cur_node.get_self_pos()
+			legal_actions = self.get_legal_actions(cur_self_pos)
+			children = set()
+
+			# Generate the children of the current node
+			for action in legal_actions:
+				new_key = self.make_key(cur_key, cur_node.get_self_pos, team_plan[i])
+				if self.stats[new_key] == 0:
+					# Extract remaining values from current tree node to compute q-value
+					cur_team_pos = cur_node.get_team_pos()
+					cur_ghost_pos = cur_node.get_ghost_pos()
+					cur_food = cur_node.get_food()
+				# TODO extract features, simulate new game state and compute q-value
+				# TODO create new node
+				# self.stats[new_key] = MCTNodes(new_state_values)
+				children.add((action, new_key))
+
+			# Pick the next action
+			for next_action, child_key in children:
+				# TODO softmax
+				# TODO pick a child node to expand
+				# cur_key = child_key
+				# cur_node = self.stats[child_key]
+				path.append(next_action)
+				rewards.append(cur_node.eats_pallet())
+		return path, rewards, cur_key
+
+	def choose_action(self, cur_state, team_plan):
+		# Start timing
+		start_time = time.time()
+
+		# Extracting values from game state
+		self_pos = cur_state.getAgentPosition(self.self_index)
+		team_pos = cur_state.getAgentPosition(self.team_index)
+		ghost_pos = cur_state.getAgentPosition(self.ghost_index)
+		food = cur_state.getAgentState(self.self_index).getFood().asList()
+
+		# Compare previous simulation and current state
+		if (team_pos, ghost_pos) != self.stats["Root"] or team_plan != self.cur_plan:
+			self.reset_search()
+			self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
+
+		# Main search loop
+		flag = True
+		while flag:
+			# MCT nodes expanding process
+			path, rewards, cur_key = self.search("Root", self.stats["Root"], self.depth, team_plan)
+
+			# Compare the current best path and the newly found path
+			weighted_reward = self.compute_reward(rewards)
+			if self.best_reward < weighted_reward:
+				self.best_path = path
+				self.best_reward = weighted_reward
+				self.last_key = cur_key
+			if time.time() - start_time >= self.time_interval:
+				flag = False
+		return self.best_path[0]
+
+	def elapse_time(self, team_plan):
+		next_action = self.best_path.pop(0)
+		# FIXME
+		self.stats["Root"] = self.stats[self.make_key("Root", next_action, team_plan[0])]
+
+	def get_legal_actions(self, pos):
+		legal_actions = ["North", "South", "Eest", "Wast"]
+		# Check if North is available
+		if pos[1] == self.walls.height - 2:
+			legal_actions.remove("North")
+		elif self.walls[pos[0]][pos[1] + 1]:
+			legal_actions.remove("North")
+
+		# Check if South is available
+		if pos[1] == 1:
+			legal_actions.remove("South")
+		elif self.walls[pos[0]][pos[1] - 1]:
+			legal_actions.remove("South")
+
+		# Check if East is available
+		if pos[0] == self.walls.width - 2:
+			legal_actions.remove("East")
+		elif self.walls[pos[0] + 1][pos[1]]:
+			legal_actions.remove("East")
+
+		# Check if West is available
+		if pos[0] == 1:
+			legal_actions.remove("West")
+		elif self.walls[pos[0] - 1][pos[1]]:
+			legal_actions.remove("West")
+
+		return legal_actions
+
+	def make_key(self, cur_key, self_action, team_action):
+		if cur_key == "Root":
+			return self_action + team_action
+		else:
+			return (*cur_key, self_action + team_action)
+
+	def compute_reward(self, rewards):
+		sum = 0
+		for i in range(len(rewards)):
+			if rewards == 1:
+				sum += self.discounts ** i
+		return sum
+
+class MCTNodes:
+	def __init__(self, self_pos=(), team_pos=(), ghost_pos=(), food=(), value=0, pallet=0):
+		self.self_pos = self_pos
+		self.team_pos = team_pos
+		self.ghost_pos = ghost_pos
+		self.food = food
+		self.value = value
+		self.pallet = pallet
+
+	def __eq__(self, other):
+		return self.team_pos == other[0] and self.ghost_pos == other[1]
+
+	def get_self_pos(self):
+		return self.self_pos
+
+	def get_team_pos(self):
+		return self.team_pos
+
+	def get_ghost_pos(self):
+		return self.ghost_pos
+
+	def get_food(self):
+		return self.food
+
+	def get_value(self):
+		return self.value
+
+	def eats_pallet(self):
+		return self.pallet
 
 
 def actionsWithoutStop(legalActions):
-    """
-    Filters actions by removing the STOP action
-    """
-    legalActions = list(legalActions)
-    if Directions.STOP in legalActions:
-        legalActions.remove(Directions.STOP)
-    return legalActions
+	"""
+	Filters actions by removing the STOP action
+	"""
+	legalActions = list(legalActions)
+	if Directions.STOP in legalActions:
+		legalActions.remove(Directions.STOP)
+	return legalActions
 
 
 def actionsWithoutReverse(legalActions, gameState, agentIndex):
-    """
-    Filters actions by removing REVERSE, i.e. the opposite action to the previous one
-    """
-    legalActions = list(legalActions)
-    reverse = Directions.REVERSE[gameState.getAgentState(agentIndex).configuration.direction]
-    if len (legalActions) > 1 and reverse in legalActions:
-        legalActions.remove(reverse)
-    return legalActions
+	"""
+	Filters actions by removing REVERSE, i.e. the opposite action to the previous one
+	"""
+	legalActions = list(legalActions)
+	reverse = Directions.REVERSE[gameState.getAgentState(agentIndex).configuration.direction]
+	if len(legalActions) > 1 and reverse in legalActions:
+		legalActions.remove(reverse)
+	return legalActions
