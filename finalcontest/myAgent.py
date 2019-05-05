@@ -234,12 +234,20 @@ class MyAgent(CaptureAgent):
 					ghost_min_pos = tmp_pos
 		ghost_next_pos = ghost_min_pos
 		# calculate features
+		# eat food or not, if so, remove the food
 		features['closest_food'] = closest_food(my_next_pos, food)
-		features['eat_food'] = food[int(my_next_pos[0])][int(my_next_pos[1])]
+		if food[int(my_next_pos[0])][int(my_next_pos[1])]:
+			food[int(my_next_pos[0])][int(my_next_pos[1])] = 0
+			features['eat_food'] = 1
+		else:
+			features['eat_food'] = 0
+		# closest distance to ghost (current ghost position)
 		closest_dis_to_ghost = closest_distance(my_next_pos, ghost_pos)
 		features['distance_to_ghost'] = closest_dis_to_ghost
+		# if ghost is one or two steps away
 		features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
 		features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
+		# distance to my teammate
 		features['distance_to_teammate'] = closest_distance(my_next_pos, team_pos)
 		qvalue = features * self.weights
 		return my_next_pos, team_next_pos, ghost_next_pos, qvalue
@@ -274,8 +282,20 @@ class MyAgent(CaptureAgent):
 				cur_team_pos = cur_node.get_team_pos()
 				cur_ghost_pos = cur_node.get_ghost_pos()
 				cur_food = cur_node.get_food()
+				# broadcast actions might be illegal
+				try:
+					tmp_team_pos = cur_team_pos
+					for action in self.receivedBroadcast[:8]:
+						tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
+						if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
+							cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
+				except:
+					print('in remove food, broadcast action is illegal!')
+
 				# TODO extract features, simulate new game state and compute q-value
 				# TODO create new node
+				next_self_pos, next_team_pos, next_ghost_pos, qvalue = \
+					self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, cur_food, action)
 				# self.stats[new_key] = MCTNodes(new_state_values)
 				children.add((action, new_key))
 
