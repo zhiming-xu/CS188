@@ -189,6 +189,13 @@ class MyAgent(CaptureAgent):
 		CaptureAgent.registerInitialState(self, gameState)
 		self.start = gameState.getAgentPosition(self.index)
 		# TODO fill in parameters of register_search()
+		self.weights = util.Counter()
+		self.weights['closest_food'] = -2
+		self.weights['eat_food'] = 4
+		self.weights['distance_to_ghost'] = 1
+		self.weights['is_ghost_1_step_away'] = -3
+		self.weights['is_ghost_2_step_away'] = -2
+		self.weights['distance_to_teammate'] = 1
 		# self.register_search()
 
 	def chooseAction(self, gameState):
@@ -205,6 +212,38 @@ class MyAgent(CaptureAgent):
 
 		currentAction = random.choice(actions)  # Change this!
 		return currentAction
+
+	def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action):
+		features = util.Counter()
+		# get my next position
+		my_next_pos = Actions.getSuccessor(my_pos, action)
+		# broadcast actions might be illegal
+		try:
+			team_next_pos = Actions.getSuccessor(team_pos, self.receivedBroadcast[0])
+		except:
+			print("Receive illegal broadcast action!")
+		# get ghost's next position
+		ghost_legal_action = self.get_legal_actions(ghost_pos)
+		ghost_min_dis, ghost_min_pos = float('inf'), (-1, -1)
+		for pac in (my_next_pos, team_next_pos):
+			for action in ghost_legal_action:
+				tmp_pos = Actions.getSuccessor(ghost_pos, action)
+				tmp_dis = closest_distance(tmp_pos, pac)
+				if tmp_dis < ghost_min_dis:
+					ghost_min_dis = tmp_dis
+					ghost_min_pos = tmp_pos
+		ghost_next_pos = ghost_min_pos
+		# calculate features
+		features['closest_food'] = closest_food(my_next_pos, food)
+		features['eat_food'] = food[int(my_next_pos[0])][int(my_next_pos[1])]
+		closest_dis_to_ghost = closest_distance(my_next_pos, ghost_pos)
+		features['distance_to_ghost'] = closest_dis_to_ghost
+		features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
+		features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
+		features['distance_to_teammate'] = closest_distance(my_next_pos, team_pos)
+		qvalue = features * self.weights
+		return my_next_pos, team_next_pos, ghost_next_pos, qvalue
+
 
 	def register_search(self, self_index, team_index, ghost_index, walls):
 		self.self_index = self_index
