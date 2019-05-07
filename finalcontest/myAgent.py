@@ -15,9 +15,8 @@
 
 
 from captureAgents import CaptureAgent
-import random, time, util, sys, heapq
+import random, time, util, sys, heapq, math
 from game import Directions, Actions
-import numpy as np
 
 ##########
 # Global #
@@ -120,7 +119,7 @@ def elegant_search(cur_state):
         neighbours = Actions.getLegalNeighbors(cur_pos, walls)
         for neighbour in neighbours:
             if neighbour not in closed and neighbour[0] < round(walls.width / 2):
-		fringe.push(neighbour)
+                fringe.push(neighbour)
         positions = set()
         for pos_x in range(round(walls.width / 2)):
             for pos_y in range(walls.height):
@@ -158,7 +157,6 @@ def elegant_search(cur_state):
                     if dist_map[cur_pos][position] == 0 or distance < dist_map[cur_pos][position]:
                         dist_map[cur_pos][position] = dist_map[position][cur_pos] = distance
     closed.clear()
-
 
 ##########
 # Agents #
@@ -308,9 +306,12 @@ class MyAgent(CaptureAgent):
                 children.append((action, new_key))
 
             # Pick the next action
-            values = np.array([self.stats[key].get_value() for _, key in children])
-            values = list(np.exp(values) / np.exp(values).sum())
-            prob = np.random.rand()
+            values = [math.exp(self.stats[key].get_value()) \
+                      for _, key in children]
+            value_sum = sum(values)
+            for i in range(len(values)):
+                values[i] = values[i] / value_sum
+            prob = random.uniform(0, 1)
             cum_sum, idx = 0, 0
             for idx in range(len(values)):
                 if cum_sum <= prob < cum_sum + values[idx]:
@@ -390,11 +391,11 @@ class MyAgent(CaptureAgent):
             return (*cur_key, self_action + team_action)
 
     def compute_reward(self, rewards):
-        sum = 0
+        reward_sum = 0
         for i in range(len(rewards)):
             if rewards[i] == 1:
-                sum += self.discounts ** i
-        return sum
+                reward_sum += self.discounts ** i
+        return reward_sum
 
 
 class MCTNodes:
