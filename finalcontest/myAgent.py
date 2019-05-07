@@ -210,22 +210,20 @@ class MyAgent(CaptureAgent):
 		"""
 		Picks among actions randomly.
 		"""
-		teammateActions = self.receivedBroadcast
-		while len(teammateActions) < self.depth:
-			teammateActions.append('Stop')
-		print(teammateActions)
+		teammateActions = []
+		for i in range(self.depth):
+			if i >= len(self.receivedBroadcast):
+				teammateActions.append("Stop")
+			else:
+				teammateActions.append(self.receivedBroadcast[i])
 		action = self.choose_action(gameState, teammateActions[:self.depth])
 		return action
 
-	def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action):
+	def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action, team_action):
 		features = util.Counter()
 		# get my next position
 		my_next_pos = Actions.getSuccessor(my_pos, action)
-		# broadcast actions might be illegal
-		try:
-			team_next_pos = Actions.getSuccessor(team_pos, self.receivedBroadcast[0])
-		except:
-			print("Receive illegal broadcast action!")
+		team_next_pos = Actions.getSuccessor(team_pos, team_action)
 		# get ghost's next position
 		ghost_legal_action = self.get_legal_actions(ghost_pos)
 		ghost_min_dis, ghost_min_pos = float('inf'), (-1, -1)
@@ -251,8 +249,6 @@ class MyAgent(CaptureAgent):
 		# if ghost is one or two steps away
 		features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
 		features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
-		# distance to my teammate
-		features['distance_to_teammate'] = closest_distance(my_next_pos, team_pos)
 		qvalue = features * self.weights
 		return my_next_pos, team_next_pos, ghost_next_pos, food, qvalue, features['eat_food']
 
@@ -273,23 +269,22 @@ class MyAgent(CaptureAgent):
 		cur_node = root_node
 		path = []
 		rewards = []
+
+		# remove food eaten by teammate
+		cur_team_pos = cur_node.get_team_pos()
+		cur_food = cur_node.get_food()
+		tmp_team_pos = cur_team_pos
+		for action in team_plan:
+			tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
+			if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
+				cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
+
 		for i in range(depth):
 			# Extracting self_pos from current tree node to compare previous simulation and teammate's new actions
 			cur_self_pos = cur_node.get_self_pos()
 			legal_actions = self.get_legal_actions(cur_self_pos)
 			children = []
 
-			# remove food eaten by teammate
-			# broadcast actions might be illegal
-			try:
-				tmp_team_pos = cur_team_pos
-				for action in self.receivedBroadcast[:depth]:
-					tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
-					if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
-						cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
-			except:
-				# print('in remove food, broadcast action is illegal!')
-				pass
 			# Generate the children of the current node
 			for action in legal_actions:
 				new_key = self.make_key(cur_key, action, team_plan[i])
@@ -298,7 +293,7 @@ class MyAgent(CaptureAgent):
 				cur_ghost_pos = cur_node.get_ghost_pos()
 				cur_food = cur_node.get_food()
 
-				params = self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, cur_food, action)
+				params = self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, cur_food, action, team_plan[i])
 				self.stats[new_key] = MCTNodes(*params)
 				children.append((action, new_key))
 
@@ -331,6 +326,7 @@ class MyAgent(CaptureAgent):
 
 		self.stats = util.Counter()
 		self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
+		print(team_pos) # fixme for debug purpose
 
 		# Main search loop
 		best_path = []
