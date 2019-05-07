@@ -190,11 +190,11 @@ class MyAgent(CaptureAgent):
 		# CaptureAgent.registerInitialState in captureAgents.py.
 		CaptureAgent.registerInitialState(self, gameState)
 		self.start = gameState.getAgentPosition(self.index)
-		# TODO fill in parameters of register_search()
 		self.weights = util.Counter()
 		self.weights['closest_food'] = -2
 		self.weights['eat_food'] = 4
 		self.weights['distance_to_ghost'] = 1
+		self.weights['eaten_by_ghost'] = -5
 		self.weights['is_ghost_1_step_away'] = -3
 		self.weights['is_ghost_2_step_away'] = -2
 
@@ -211,12 +211,9 @@ class MyAgent(CaptureAgent):
 		Picks among actions randomly.
 		"""
 		teammateActions = []
-		for i in range(self.depth):
-			if i >= len(self.receivedBroadcast):
-				teammateActions.append("Stop")
-			else:
-				teammateActions.append(self.receivedBroadcast[i])
-		action = self.choose_action(gameState, teammateActions[:self.depth])
+		for i in self.receivedBroadcast:
+			teammateActions.append(i)
+		action = self.choose_action(gameState, teammateActions)
 		return action
 
 	def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action, team_action):
@@ -227,16 +224,16 @@ class MyAgent(CaptureAgent):
 		# get ghost's next position
 		ghost_legal_action = self.get_legal_actions(ghost_pos)
 		ghost_min_dis, ghost_min_pos = float('inf'), (-1, -1)
-		for pac in (my_next_pos, team_next_pos):
-			for action in ghost_legal_action:
-				tmp_pos = Actions.getSuccessor(ghost_pos, action)
-				tmp_dis = closest_distance(tmp_pos, pac)
-				if tmp_dis < ghost_min_dis:
-					ghost_min_dis = tmp_dis
-					ghost_min_pos = tmp_pos
+		for action in ghost_legal_action:
+			tmp_pos = Actions.getSuccessor(ghost_pos, action)
+			tmp_dis = closest_distance(tmp_pos, my_next_pos)
+			if tmp_dis < ghost_min_dis:
+				ghost_min_dis = tmp_dis
+				ghost_min_pos = tmp_pos
 		ghost_next_pos = ghost_min_pos
 		# calculate features
 		# eat food or not, if so, remove the food
+		features['eaten_by_ghost'] = my_next_pos == ghost_next_pos
 		features['closest_food'] = closest_food(my_next_pos, food)
 		if food[int(my_next_pos[0])][int(my_next_pos[1])]:
 			food[int(my_next_pos[0])][int(my_next_pos[1])] = 0
@@ -259,7 +256,7 @@ class MyAgent(CaptureAgent):
 		self.ghost_index = ghost_index
 		self.walls = walls
 		self.discounts = 0.9
-		self.time_interval = 0.9
+		self.time_interval = 0.2
 		self.depth = 8
 		self.stats = util.Counter()
 		self.stats["Root"] = MCTNodes()
@@ -278,6 +275,23 @@ class MyAgent(CaptureAgent):
 			tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
 			if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
 				cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
+
+		simulated_actions = []
+		for i in range(self.depth - len(team_plan)):
+			min_distance = float("inf")
+			best_action = "Stop"
+			for action in self.get_legal_actions(tmp_team_pos):
+				new_team_pos = Actions.getSuccessor(tmp_team_pos, action)
+				distance = closest_food(new_team_pos, cur_food)
+				if distance < min_distance:
+					min_distance = distance
+					tmp_team_pos = new_team_pos
+					best_action = action
+			simulated_actions.append(best_action)
+			if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
+				cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
+		team_plan = team_plan + simulated_actions
+		print(team_plan)
 
 		for i in range(depth):
 			# Extracting self_pos from current tree node to compare previous simulation and teammate's new actions
@@ -326,7 +340,6 @@ class MyAgent(CaptureAgent):
 
 		self.stats = util.Counter()
 		self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
-		print(team_pos) # fixme for debug purpose
 
 		# Main search loop
 		best_path = []
@@ -383,7 +396,7 @@ class MyAgent(CaptureAgent):
 	def compute_reward(self, rewards):
 		sum = 0
 		for i in range(len(rewards)):
-			if rewards == 1:
+			if rewards[i] == 1:
 				sum += self.discounts ** i
 		return sum
 
