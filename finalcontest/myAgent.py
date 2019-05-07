@@ -86,7 +86,10 @@ def breadth_first_search(pos, target, walls):
 
 
 def closest_food(pos, food):
-	food_list = food.asList()
+	try:
+		food_list = food.asList()
+	except:
+		food_list = food
 	if len(food_list) == 0:
 		return None
 	min_distance = float("inf")
@@ -194,12 +197,13 @@ class MyAgent(CaptureAgent):
 		self.weights['distance_to_ghost'] = 1
 		self.weights['is_ghost_1_step_away'] = -3
 		self.weights['is_ghost_2_step_away'] = -2
-		self.weights['distance_to_teammate'] = 1
 
 		team_index = self.getTeam(gameState)
 		team_index.remove(self.index)
 		ghost_index = self.getOpponents(gameState)
 		walls = gameState.getWalls()
+		# THIS IS A VERY ELEGANT SEARCH #
+		elegant_search(gameState)
 		self.register_search(self.index, team_index[0], ghost_index[0], walls)
 
 	def chooseAction(self, gameState):
@@ -207,8 +211,11 @@ class MyAgent(CaptureAgent):
 		Picks among actions randomly.
 		"""
 		teammateActions = self.receivedBroadcast
-		self.depth = min(self.depth, len(teammateActions))
-		return self.choose_action(gameState, teammateActions[:self.depth])
+		while len(teammateActions) < self.depth:
+			teammateActions.append('Stop')
+		print(teammateActions)
+		action = self.choose_action(gameState, teammateActions[:self.depth])
+		return action
 
 	def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action):
 		features = util.Counter()
@@ -247,7 +254,7 @@ class MyAgent(CaptureAgent):
 		# distance to my teammate
 		features['distance_to_teammate'] = closest_distance(my_next_pos, team_pos)
 		qvalue = features * self.weights
-		return my_next_pos, team_next_pos, ghost_next_pos, qvalue, features['eat_food']
+		return my_next_pos, team_next_pos, ghost_next_pos, food, qvalue, features['eat_food']
 
 
 	def register_search(self, self_index, team_index, ghost_index, walls):
@@ -272,6 +279,17 @@ class MyAgent(CaptureAgent):
 			legal_actions = self.get_legal_actions(cur_self_pos)
 			children = []
 
+			# remove food eaten by teammate
+			# broadcast actions might be illegal
+			try:
+				tmp_team_pos = cur_team_pos
+				for action in self.receivedBroadcast[:depth]:
+					tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
+					if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
+						cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
+			except:
+				# print('in remove food, broadcast action is illegal!')
+				pass
 			# Generate the children of the current node
 			for action in legal_actions:
 				new_key = self.make_key(cur_key, action, team_plan[i])
@@ -279,15 +297,6 @@ class MyAgent(CaptureAgent):
 				cur_team_pos = cur_node.get_team_pos()
 				cur_ghost_pos = cur_node.get_ghost_pos()
 				cur_food = cur_node.get_food()
-				# broadcast actions might be illegal
-				try:
-					tmp_team_pos = cur_team_pos
-					for action in self.receivedBroadcast[:depth]:
-						tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
-						if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
-							cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
-				except:
-					print('in remove food, broadcast action is illegal!')
 
 				params = self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, cur_food, action)
 				self.stats[new_key] = MCTNodes(*params)
@@ -318,7 +327,7 @@ class MyAgent(CaptureAgent):
 		self_pos = cur_state.getAgentPosition(self.self_index)
 		team_pos = cur_state.getAgentPosition(self.team_index)
 		ghost_pos = cur_state.getAgentPosition(self.ghost_index)
-		food = cur_state.getFood().asList()
+		food = self.getFood(cur_state)
 
 		self.stats = util.Counter()
 		self.stats["Root"] = MCTNodes(self_pos, team_pos, ghost_pos, food, 0)
@@ -342,6 +351,7 @@ class MyAgent(CaptureAgent):
 
 	def get_legal_actions(self, pos):
 		legal_actions = ["North", "South", "East", "West"]
+		pos = (int(pos[0]), int(pos[1]))
 		# Check if North is available
 		if pos[1] == self.walls.height - 2:
 			legal_actions.remove("North")
