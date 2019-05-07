@@ -256,7 +256,7 @@ class MyAgent(CaptureAgent):
 		self.ghost_index = ghost_index
 		self.walls = walls
 		self.discounts = 0.9
-		self.time_interval = 0.2
+		self.time_interval = 0.9
 		self.depth = 8
 		self.stats = util.Counter()
 		self.stats["Root"] = MCTNodes()
