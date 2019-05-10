@@ -212,10 +212,10 @@ class MyAgent(CaptureAgent):
         self.team_index.remove(self.index)
         self.team_index = self.team_index[0]
         self.ghost_index = self.getOpponents(gameState)[0]
-        self.depth = 4
+        self.depth = 6
         # THIS IS A VERY ELEGANT SEARCH #
         elegant_search(gameState)
-        self.pre_calculate(gameState)
+        # self.pre_calculate(gameState)
 
     def pre_calculate(self, gameState):
         walls = gameState.getWalls()
@@ -318,7 +318,8 @@ class MyAgent(CaptureAgent):
         # print(gameState.getScore(), self.pre_score)
         # closest distance to ghost (current ghost position)
         closest_dis_to_ghost = closest_distance(my_pos, ghost_next_pos)
-        # features['distance_to_ghost'] = math.log(closest_dis_to_ghost / min(self.walls.width, self.walls.height) + 1)
+        #features['distance_to_ghost'] = math.log(closest_dis_to_ghost / \
+        #        max(gameState.getWalls().width, gameState.getWalls().height) ** 2)
         # if ghost is one or two steps away
         features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
         features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
