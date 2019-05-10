@@ -121,6 +121,16 @@ def closestDistance(pos, target, walls):
     # no path found
     return None
 
+def actionsWithoutReverse(legalActions, gameState, agentIndex):
+    """
+    Filters actions by removing REVERSE, i.e. the opposite action to the previous one
+    """
+    legalActions = list(legalActions)
+    reverse = Directions.REVERSE[gameState.getAgentState(agentIndex).configuration.direction]
+    if len(legalActions) > 1 and reverse in legalActions:
+        legalActions.remove(reverse)
+    return legalActions
+
 ##########
 # Agents #
 ##########
@@ -206,6 +216,7 @@ class MyAgent(CaptureAgent):
         if self.getPreviousObservation() is not None:
             self.update_value(gameState)
         self.pre_action.append(self.getQAction(gameState))
+        actionsWithoutReverse(self.pre_action, gameState, self.index)
         return self.pre_action[-1]
 
     def update_value(self, state):
