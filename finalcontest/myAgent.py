@@ -229,7 +229,8 @@ class MyAgent(CaptureAgent):
         # calculate features
         # eat food or not, if so, remove the food
         features['eaten_by_ghost'] = my_next_pos == ghost_next_pos
-        features['closest_food'] = closest_food(my_next_pos, food)
+        if closest_food:
+            features['closest_food'] = closest_food(my_next_pos, food)
         if food[int(my_next_pos[0])][int(my_next_pos[1])]:
             food[int(my_next_pos[0])][int(my_next_pos[1])] = 0
             features['eat_food'] = 1
@@ -359,25 +360,25 @@ class MyAgent(CaptureAgent):
         legal_actions = ["North", "South", "East", "West"]
         pos = (int(pos[0]), int(pos[1]))
         # Check if North is available
-        if pos[1] == self.walls.height - 2:
+        if pos[1] >= self.walls.height - 2:
             legal_actions.remove("North")
         elif self.walls[pos[0]][pos[1] + 1]:
             legal_actions.remove("North")
 
         # Check if South is available
-        if pos[1] == 1:
+        if pos[1] <= 1:
             legal_actions.remove("South")
         elif self.walls[pos[0]][pos[1] - 1]:
             legal_actions.remove("South")
 
         # Check if East is available
-        if pos[0] == self.walls.width - 2:
+        if pos[0] >= self.walls.width - 2:
             legal_actions.remove("East")
         elif self.walls[pos[0] + 1][pos[1]]:
             legal_actions.remove("East")
 
         # Check if West is available
-        if pos[0] == 1:
+        if pos[0] <= 1:
             legal_actions.remove("West")
         elif self.walls[pos[0] - 1][pos[1]]:
             legal_actions.remove("West")
@@ -427,24 +428,3 @@ class MCTNodes:
 
     def eats_pellet(self):
         return self.pellet
-
-
-def actionsWithoutStop(legalActions):
-    """
-    Filters actions by removing the STOP action
-    """
-    legalActions = list(legalActions)
-    if Directions.STOP in legalActions:
-        legalActions.remove(Directions.STOP)
-    return legalActions
-
-
-def actionsWithoutReverse(legalActions, gameState, agentIndex):
-    """
-    Filters actions by removing REVERSE, i.e. the opposite action to the previous one
-    """
-    legalActions = list(legalActions)
-    reverse = Directions.REVERSE[gameState.getAgentState(agentIndex).configuration.direction]
-    if len(legalActions) > 1 and reverse in legalActions:
-        legalActions.remove(reverse)
-    return legalActions
