@@ -99,7 +99,6 @@ def closest_food(pos, food):
 def closest_distance(pos1, pos2):
     return dist_map[pos1][pos2]
 
-
 def elegant_search(cur_state):
     walls = cur_state.getWalls()
     fringe = Deque()
@@ -188,22 +187,27 @@ class MyAgent(CaptureAgent):
         CaptureAgent.registerInitialState(self, gameState)
         self.start = gameState.getAgentPosition(self.index)
         self.weights = util.Counter()
-        self.weights['closest_food'] = -7.2
-        self.weights['eat_food'] = 4.2
-        self.weights['distance_to_ghost'] = -1.0
-        self.weights['eaten_by_ghost'] = -5
-        self.weights['is_ghost_1_step_away'] = -4.3
-        self.weights['is_ghost_2_step_away'] = -5
+        self.weights['closest_food'] = -2.4
+        self.weights['eat_food'] = 6
+        self.weights['distance_to_ghost'] = .2
+        self.weights['eaten_by_ghost'] = -4
+        self.weights['is_ghost_1_step_away'] = -3
+        self.weights['is_ghost_2_step_away'] = -2
         self.weights['food_nearby'] = 1.2
-        self.weights['is_dead_end'] = -1.1
-        self.weights['is_tunnel'] = -1.6
-        self.weights['is_crossing'] = .8
-        self.weights['is_open_area'] = 1.7
+        self.weights['is_dead_end'] = -.8
+        self.weights['is_tunnel'] = -.4
+        self.weights['is_crossing'] = .4
+        self.weights['is_open_area'] = .8
+        self.weights['bias'] = 3
         self.is_dead_end = util.Counter()
         self.is_tunnel = util.Counter()
         self.is_crossing = util.Counter()
         self.is_open_area = util.Counter()
         self.food_num = len(self.getFood(gameState).asList())
+        self.epsilon = .2
+        self.best_path = None
+        self.best_reward = 0
+        self.threshold = 3
         team_index = self.getTeam(gameState)
         team_index.remove(self.index)
         ghost_index = self.getOpponents(gameState)
@@ -232,18 +236,21 @@ class MyAgent(CaptureAgent):
     
     def chooseAction(self, gameState):
         self.food_num = len(self.getFood(gameState).asList())
-        teammateActions = []
-        for i in self.receivedBroadcast:
-            teammateActions.append(i)
+        teammateActions = list(self.receivedBroadcast)
         # teammate actions at this stage might be incomplete
+        self.food_num = len(self.getFood(gameState).asList())
         action = self.choose_action(gameState, teammateActions)
-        return action
+        self.stats = util.Counter()
+        return self.best_path.pop(0)
 
     def get_position_and_value(self, my_pos, team_pos, ghost_pos, food, action, team_action):
         features = util.Counter()
         # get my next position
         my_next_pos = Actions.getSuccessor(my_pos, action)
+        # get teammate's next position
         team_next_pos = Actions.getSuccessor(team_pos, team_action)
+        if team_next_pos not in Actions.getLegalNeighbors(team_pos, self.walls):
+            team_next_pos = (1., 1.)
         # get ghost's next position
         ghost_legal_neighbors = Actions.getLegalNeighbors(ghost_pos, self.walls)
         ghost_min_dis, ghost_min_pos = float('inf'), (-1, -1)
@@ -257,17 +264,18 @@ class MyAgent(CaptureAgent):
         # calculate features
         # eat food or not, if so, remove the food
         features['eaten_by_ghost'] = my_next_pos == ghost_next_pos
-        if closest_food:
-            features['closest_food'] = closest_food(my_next_pos, food) / \
-                                       min(self.walls.width, self.walls.height) * 1.5
-        if food[int(my_next_pos[0])][int(my_next_pos[1])]:
+        closest_dis_to_food = closest_food(my_next_pos, food)
+        if closest_dis_to_food:
+            features['closest_food'] = closest_dis_to_food * 2 / \
+                                       min(self.walls.width, self.walls.height)
+        if food is not None and food[int(my_next_pos[0])][int(my_next_pos[1])]:
             food[int(my_next_pos[0])][int(my_next_pos[1])] = 0
             features['eat_food'] = 1
         else:
             features['eat_food'] = 0
         # closest distance to ghost (current ghost position)
         closest_dis_to_ghost = closest_distance(my_next_pos, ghost_pos)
-        features['distance_to_ghost'] = closest_dis_to_ghost / (min(self.walls.width, self.walls.height) ** 2)
+        # features['distance_to_ghost'] = math.log(closest_dis_to_ghost / min(self.walls.width, self.walls.height) + 1)
         # if ghost is one or two steps away
         features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
         features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
@@ -276,6 +284,7 @@ class MyAgent(CaptureAgent):
         features['is_crossing'] = self.is_crossing[(int(my_next_pos[0]), int(my_next_pos[1]))]
         features['is_open_area'] = self.is_open_area[(int(my_next_pos[0]), int(my_next_pos[1]))]
         features.divideAll(10.0)
+        features['bias'] = 1
         qvalue = features * self.weights
         return my_next_pos, team_next_pos, ghost_next_pos, food, qvalue, features['eat_food']
 
@@ -285,9 +294,9 @@ class MyAgent(CaptureAgent):
         self.team_index = team_index
         self.ghost_index = ghost_index
         self.walls = walls
-        self.discounts = 0.95
-        self.time_interval = 0.3
-        self.depth = 8
+        self.discounts = 0.9
+        self.time_interval = 0.5
+        self.depth = 15
         self.stats = util.Counter()
         self.stats["Root"] = MCTNodes()
 
@@ -298,15 +307,19 @@ class MyAgent(CaptureAgent):
         path = []
         rewards = []
 
-        # remove food eaten by teammate
         cur_team_pos = cur_node.get_team_pos()
         cur_food = cur_node.get_food()
         tmp_team_pos = cur_team_pos
+        # take down the foods' indices, to remove later
+        removed_list = []
         for action in team_plan:
             tmp_team_pos = Actions.getSuccessor(tmp_team_pos, action)
-            if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
-                cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
-
+            if tmp_team_pos in Actions.getLegalNeighbors(tmp_team_pos, self.walls) and \
+               cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
+                removed_list.append([int(tmp_team_pos[0]), int(tmp_team_pos[1])])
+            else:
+                removed_list.append(None)
+        # padding teammate position
         simulated_actions = []
         for i in range(self.depth - len(team_plan)):
             min_distance = float("inf")
@@ -319,8 +332,11 @@ class MyAgent(CaptureAgent):
                     tmp_team_pos = new_team_pos
                     best_action = action
             simulated_actions.append(best_action)
-            if cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
-                cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])] = 0
+            if tmp_team_pos in Actions.getLegalNeighbors(tmp_team_pos, self.walls) and \
+               cur_food[int(tmp_team_pos[0])][int(tmp_team_pos[1])]:
+                removed_list.append([int(tmp_team_pos[0]), int(tmp_team_pos[1])])
+            else:
+                removed_list.append(None)
         team_plan = team_plan + simulated_actions
 
         for i in range(depth):
@@ -328,39 +344,42 @@ class MyAgent(CaptureAgent):
             cur_self_pos = cur_node.get_self_pos()
             legal_actions = self.get_legal_actions(cur_self_pos)
             children = []
-
             # Generate the children of the current node
             for action in legal_actions:
-                new_key = self.make_key(cur_key, action, team_plan[i])
-                print(new_key)
+                new_key = self.make_key(cur_key, action, team_plan[i], self.food_num)
                 # Extract remaining values from current tree node to compute q-value
                 cur_team_pos = cur_node.get_team_pos()
                 cur_ghost_pos = cur_node.get_ghost_pos()
                 cur_food = cur_node.get_food()
-
+                if removed_list[i] and cur_food:
+                    cur_food[removed_list[i][0]][removed_list[i][1]] = 0
                 params = self.get_position_and_value(cur_self_pos, cur_team_pos, cur_ghost_pos, \
                                                      cur_food, action, team_plan[i])
                 self.stats[new_key] = MCTNodes(*params)
                 children.append((action, new_key))
 
             # Pick the next action
-            values = [math.exp(self.stats[key].get_value()) \
-                      for _, key in children]
-            value_sum = sum(values)
-            for i in range(len(values)):
-                values[i] = values[i] / value_sum
+            values = [self.stats[key].get_value() for _, key in children]
             prob = random.uniform(0, 1)
-            cum_sum, idx = 0, 0
-            for idx in range(len(values)):
-                if cum_sum <= prob < cum_sum + values[idx]:
-                    break
-                else:
-                    cum_sum += values[idx]
+            if prob < self.epsilon:
+                values = [math.exp(value) for value in values]
+                value_sum = sum(values)
+                for i in range(len(values)):
+                    values[i] = values[i] / value_sum
+                prob = random.uniform(0, 1)
+                cum_sum, idx = 0, 0
+                for idx in range(len(values)):
+                    if cum_sum <= prob < cum_sum + values[idx]:
+                        break
+                    else:
+                        cum_sum += values[idx]
+            else:
+                idx = values.index(max(values))
             best_child = children[idx]
             cur_key = best_child[1]
             cur_node = self.stats[cur_key]
             path.append(best_child[0])
-            rewards.append(self.stats[cur_key].eats_pellet())
+            rewards.append(self.stats[cur_key].get_value() / self.weights['bias'] + self.stats[cur_key].eats_pellet())
         return path, rewards, cur_key
 
     def choose_action(self, cur_state, team_plan):
@@ -380,19 +399,20 @@ class MyAgent(CaptureAgent):
         # Main search loop
         best_path = []
         best_reward = float("-inf")
-        flag = True
-        while flag:
+        while True:
             # MCT nodes expanding process
             path, rewards, _ = self.search("Root", self.stats["Root"], self.depth, team_plan)
-
             # Compare the current best path and the newly found path
             weighted_reward = self.compute_reward(rewards)
             if best_reward < weighted_reward:
                 best_path = path
                 best_reward = weighted_reward
             if time.time() - start_time >= self.time_interval:
-                flag = False
-        return best_path[0]
+                break
+        if not self.best_path or abs(self.best_reward-best_reward) > self.threshold:
+            self.best_path = best_path
+            self.best_reward = best_reward
+        return self.best_path
 
     def get_legal_actions(self, pos):
         legal_actions = ["North", "South", "East", "West"]
@@ -423,17 +443,16 @@ class MyAgent(CaptureAgent):
 
         return legal_actions
 
-    def make_key(self, cur_key, self_action, team_action):
+    def make_key(self, cur_key, self_action, team_action, food_num):
         if cur_key == "Root":
-            return ((self_action, team_action),)
+            return ((self_action, team_action, food_num),)
         else:
-            return tuple(list(cur_key) + [(self_action, team_action)])
+            return tuple(list(cur_key) + [(self_action, team_action, food_num)])
 
     def compute_reward(self, rewards):
         reward_sum = 0
         for i in range(len(rewards)):
-            if rewards[i] == 1:
-                reward_sum += self.discounts ** i
+            reward_sum += rewards[i] * self.discounts ** i
         return reward_sum
 
 
@@ -448,6 +467,10 @@ class MCTNodes:
 
     def __eq__(self, other):
         return self.team_pos == other[0] and self.ghost_pos == other[1]
+
+    def __str__(self):
+        return str({"my position": self.self_pos, "team position": self.team_pos, "ghost_position": self.ghost_pos,\
+                    "value": self.value, "pellet": self.pellet})
 
     def get_self_pos(self):
         return self.self_pos
