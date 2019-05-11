@@ -88,13 +88,11 @@ class MyAgent(CaptureAgent):
         weights['is-ghosts-2-step-away'] = -5
         weights['closest_distance_to_ghost'] = -1.0
         
-        # weights['food_nearby'] = 1.2
+        weights['food_nearby'] = 1.2
         # weights['is_dead_end'] = -1.1
         # weights['is_tunnel'] = -1.6
         # weights['is_crossing'] = .8
         # weights['is_open_area'] = 1.7
-        # weights['is_stop'] = -4.0
-        # weights['is_wandering'] = -4.3
         weights['bias'] = 1
         self.weights = weights
         team_index = self.getTeam(gameState)
@@ -179,8 +177,13 @@ class MyAgent(CaptureAgent):
         diff = self.getReward(state) + self.discount * self.computeValueFromQValues(state)\
                - pre_value
         # print('WEIGHT BEFORE:', self.weights)
+        change, change_sum = 0, 0
         for feature in pre_features:
-            self.weights[feature] += self.alpha * diff * pre_features[feature]
+            change = self.alpha * diff * pre_features[feature]
+            self.weights[feature] += change
+            change_sum += abs(change)
+        if change_sum > .1:
+            print('WEIGHTS: ', self.weights,'VALUES: ', pre_features)
         # print('WEIGHT AFTER:', self.weights)
 
     def getReward(self, state):
@@ -225,12 +228,6 @@ class MyAgent(CaptureAgent):
         features['bias'] = 1.0
         new_agent_state = next_state.getAgentState(self.index)
         next_x, next_y = new_agent_state.getPosition()
-        # if action is stop
-        # features['is_stop'] = action == Directions.STOP
-        # features['is_wandering'] =\
-        #       self.pre_action[-1] == Actions.reverseDirection(action)\
-        #       if self.pre_action else 0
-        # Offensive / distance to closest dot
         min_distance = self.closestFood((int(next_x), int(next_y)), food_to_eat, walls)
         if min_distance is not None:
             features['min_distance_to_food'] = min_distance /\
@@ -239,11 +236,10 @@ class MyAgent(CaptureAgent):
         two_step_away = []
         for oppo in one_step_away:
             two_step_away += Actions.getLegalNeighbors(oppo, walls)
-        # for pos in two_step_away:
-        #     if food_to_eat[pos[0]][pos[1]]:
-        #         features['food_nearby'] = 1
-        #         break
-        # Offensive / distance to closest ghost
+        for pos in two_step_away:
+            if food_to_eat[pos[0]][pos[1]]:
+                features['food_nearby'] = 1
+                break
         distances = []
         opponent_pos = []
         for opponent in opponent_index:
@@ -252,10 +248,10 @@ class MyAgent(CaptureAgent):
         if distances:
             features['closest_distance_to_ghost'] = min(distances) /\
                                     min(walls.width, walls.height)
-        # features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
-        # features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
-        # features['is_crossing'] = self.is_crossing[(next_x, next_y)]
-        # features['is_open_area'] = self.is_open_area[(next_x, next_y)]
+        features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
+        features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
+        features['is_crossing'] = self.is_crossing[(next_x, next_y)]
+        features['is_open_area'] = self.is_open_area[(next_x, next_y)]
         # is ghosts 1 or 2 step away
         if opponent_pos:
             one_step_away = []
