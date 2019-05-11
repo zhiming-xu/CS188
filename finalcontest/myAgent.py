@@ -275,10 +275,10 @@ class MyAgent(CaptureAgent):
         new_agent_state = next_state.getAgentState(self.index)
         next_x, next_y = new_agent_state.getPosition()
         # if action is stop
-        features['is_stop'] = action == Directions.STOP
-        features['is_wandering'] =\
-                self.pre_action[-1] == Actions.reverseDirection(action)\
-                if self.pre_action else 0
+        # features['is_stop'] = action == Directions.STOP
+        # features['is_wandering'] =\
+        #       self.pre_action[-1] == Actions.reverseDirection(action)\
+        #       if self.pre_action else 0
         # Offensive / distance to closest dot
         min_distance = closestFood((int(next_x), int(next_y)), food_to_eat, walls)
         if min_distance is not None:
@@ -288,10 +288,10 @@ class MyAgent(CaptureAgent):
         two_step_away = []
         for oppo in one_step_away:
             two_step_away += Actions.getLegalNeighbors(oppo, walls)
-        for pos in two_step_away:
-            if food_to_eat[pos[0]][pos[1]]:
-                features['food_nearby'] = 1
-                break
+        # for pos in two_step_away:
+        #     if food_to_eat[pos[0]][pos[1]]:
+        #         features['food_nearby'] = 1
+        #         break
         # Offensive / distance to closest ghost
         distances = []
         opponent_pos = []
@@ -302,10 +302,10 @@ class MyAgent(CaptureAgent):
         if distances:
             features['closest_distance_to_ghost'] = min(distances) /\
                                     min(walls.width, walls.height)
-        features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
-        features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
-        features['is_crossing'] = self.is_crossing[(next_x, next_y)]
-        features['is_open_area'] = self.is_open_area[(next_x, next_y)]
+        # features['is_dead_end'] = self.is_dead_end[(next_x, next_y)]
+        # features['is_tunnel'] = self.is_tunnel[(next_x, next_y)]
+        # features['is_crossing'] = self.is_crossing[(next_x, next_y)]
+        # features['is_open_area'] = self.is_open_area[(next_x, next_y)]
         # is ghosts 1 or 2 step away
         if opponent_pos:
             one_step_away = []
