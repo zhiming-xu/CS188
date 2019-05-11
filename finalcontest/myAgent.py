@@ -211,7 +211,6 @@ class MyAgent(CaptureAgent):
         self.depth = 5
         # THIS IS A VERY ELEGANT SEARCH #
         elegant_search(gameState)
-        # self.pre_calculate(gameState)
 
     def pre_calculate(self, gameState):
         walls = gameState.getWalls()
