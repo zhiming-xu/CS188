@@ -183,7 +183,7 @@ class MyAgent(CaptureAgent):
             self.weights[feature] += change
             change_sum += abs(change)
         if change_sum > .1:
-            print('WEIGHTS: ', self.weights,'VALUES: ', pre_features)
+            print('WEIGHTS: ', self.weights)
         # print('WEIGHT AFTER:', self.weights)
 
     def getReward(self, state):
@@ -198,12 +198,7 @@ class MyAgent(CaptureAgent):
         # death penalty
         if abs(cur_pos[0] - pre_pos[0]) + abs(cur_pos[1] - pre_pos[1]) > 3:
             score_bonus -= 1
-        # stop penalty
-        stop_penalty = self.pre_action[-1] == Directions.STOP
-        wandering_penalty =\
-            self.pre_action[-1] == Actions.reverseDirection(self.pre_action[-2])\
-                                   if len(self.pre_action) > 1 else 0
-        reward = score_bonus - stop_penalty - wandering_penalty
+        reward = score_bonus
         return reward
 
     def getSuccessor(self, gameState, action):
