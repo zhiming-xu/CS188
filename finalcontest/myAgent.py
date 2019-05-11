@@ -187,32 +187,28 @@ class MyAgent(CaptureAgent):
         CaptureAgent.registerInitialState(self, gameState)
         self.start = gameState.getAgentPosition(self.index)
         self.weights = util.Counter()
-        self.weights['closest_food'] = 4
-        self.weights['eat_food'] = 5
-        self.weights['distance_to_ghost'] = .2
+        self.weights['closest_food'] = -7.2
+        self.weights['eat_food'] = 4.6
+        self.weights['distance_to_ghost'] = -.6
         self.weights['eaten_by_ghost'] = -4
-        self.weights['is_ghost_1_step_away'] = -3
-        self.weights['is_ghost_2_step_away'] = -2
+        self.weights['is_ghost_1_step_away'] = -4.3
+        self.weights['is_ghost_2_step_away'] = -5
         self.weights['food_nearby'] = 1.2
         self.weights['is_dead_end'] = -.8
         self.weights['is_tunnel'] = -.4
         self.weights['is_crossing'] = .4
         self.weights['is_open_area'] = .8
-        self.weights['bias'] = 3
+        self.weights['bias'] = 1.2
         self.is_dead_end = util.Counter()
         self.is_tunnel = util.Counter()
         self.is_crossing = util.Counter()
         self.is_open_area = util.Counter()
         self.food_num = len(self.getFood(gameState).asList())
-        self.epsilon = .2
-        self.best_path = None
-        self.best_reward = 0
-        self.threshold = 3
         self.team_index = self.getTeam(gameState)
         self.team_index.remove(self.index)
         self.team_index = self.team_index[0]
         self.ghost_index = self.getOpponents(gameState)[0]
-        self.depth = 6
+        self.depth = 5
         # THIS IS A VERY ELEGANT SEARCH #
         elegant_search(gameState)
         # self.pre_calculate(gameState)
@@ -236,7 +232,6 @@ class MyAgent(CaptureAgent):
     
     def chooseAction(self, gameState):
         self.food_num = len(self.getFood(gameState).asList())
-        teammateActions = list(self.receivedBroadcast)
         # teammate actions at this stage might be incomplete
         return self.alphabetaSearch(gameState, self.index, self.depth, float('-inf'), float('inf'))[1]
 
@@ -313,13 +308,12 @@ class MyAgent(CaptureAgent):
         features['eaten_by_ghost'] = my_pos == ghost_next_pos
         closest_dis_to_food = closest_food(my_pos, food)
         if closest_dis_to_food:
-            features['closest_food'] = 1 / (closest_dis_to_food + 1)
+            features['closest_food'] = closest_dis_to_food * 1.5 / min(walls.width, walls.height)
         features['eat_food'] = gameState.getScore()!=self.pre_score
         # print(gameState.getScore(), self.pre_score)
         # closest distance to ghost (current ghost position)
         closest_dis_to_ghost = closest_distance(my_pos, ghost_next_pos)
-        #features['distance_to_ghost'] = math.log(closest_dis_to_ghost / \
-        #        max(gameState.getWalls().width, gameState.getWalls().height) ** 2)
+        features['distance_to_ghost'] = closest_dis_to_ghost / max(walls.width, walls.height)
         # if ghost is one or two steps away
         features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
         features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
@@ -327,7 +321,7 @@ class MyAgent(CaptureAgent):
         # features['is_tunnel'] = self.is_tunnel[(int(my_pos[0]), int(my_pos[1]))]
         # features['is_crossing'] = self.is_crossing[(int(my_pos[0]), int(my_pos[1]))]
         # features['is_open_area'] = self.is_open_area[(int(my_pos[0]), int(my_pos[1]))]
-        features.divideAll(10.0)
         features['bias'] = 1
+        features.divideAll(10.0)
         qvalue = features * self.weights + (gameState.getScore() - self.pre_score) * 10
         return qvalue
