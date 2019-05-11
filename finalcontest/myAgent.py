@@ -50,17 +50,16 @@ class MyAgent(CaptureAgent):
         CaptureAgent.registerInitialState(self, gameState)
         self.start = gameState.getAgentPosition(self.index)
         self.weights = util.Counter()
-        self.weights['closest_food'] = -7.2
-        self.weights['eat_food'] = 4.6
+        self.weights['closest_food'] = -7
+        self.weights['eat_food'] = 4.5
         self.weights['eaten_by_ghost'] = -3
         self.weights['is_ghost_1_step_away'] = -4.3
         self.weights['is_ghost_2_step_away'] = -5
-        self.weights['food_nearby'] = 1.2
-        self.weights['is_dead_end'] = -.8
-        self.weights['is_tunnel'] = -.4
-        self.weights['is_crossing'] = .4
-        self.weights['is_open_area'] = .8
-        self.weights['bias'] = 1.2
+        self.weights['is_dead_end'] = -.1
+        self.weights['is_tunnel'] = -.2
+        self.weights['is_crossing'] = .3
+        self.weights['is_open_area'] = .2
+        self.weights['bias'] = 1.4
         self.is_dead_end = util.Counter()
         self.is_tunnel = util.Counter()
         self.is_crossing = util.Counter()
@@ -186,18 +185,11 @@ class MyAgent(CaptureAgent):
                     ghost_min_dis = tmp_dis
                     ghost_min_pos = neighbor
         ghost_next_pos = ghost_min_pos
-        # calculate features
-        # eat food or not, if so, remove the food
         features['eaten_by_ghost'] = my_pos == ghost_next_pos
         closest_dis_to_food = self.closest_food(my_pos, food)
         if closest_dis_to_food:
             features['closest_food'] = closest_dis_to_food * 1.5 / min(walls.width, walls.height)
-        features['eat_food'] = gameState.getScore()!=self.pre_score
-        # print(gameState.getScore(), self.pre_score)
-        # closest distance to ghost (current ghost position)
-        # closest_dis_to_ghost = self.getMazeDistance(my_pos, ghost_next_pos)
-        # features['distance_to_ghost'] = closest_dis_to_ghost / max(walls.width, walls.height)
-        # if ghost is one or two steps away
+        features['eat_food'] = (gameState.getScore()!=self.pre_score)<<(len(food.asList())<=2)
         prob = random.uniform(0, 1)
         one_step_away = Actions.getLegalNeighbors(ghost_pos, walls)
         two_step_away = []
