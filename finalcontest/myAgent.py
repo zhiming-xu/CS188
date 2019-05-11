@@ -52,7 +52,6 @@ class MyAgent(CaptureAgent):
         self.weights = util.Counter()
         self.weights['closest_food'] = -7.2
         self.weights['eat_food'] = 4.6
-        self.weights['distance_to_ghost'] = -.6
         self.weights['eaten_by_ghost'] = -3
         self.weights['is_ghost_1_step_away'] = -4.3
         self.weights['is_ghost_2_step_away'] = -5
@@ -72,6 +71,7 @@ class MyAgent(CaptureAgent):
         self.ghost_index = self.getOpponents(gameState)[0]
         self.threshold = .6
         self.depth = 5
+        self.pre_calculate(gameState)
 
     def closest_food(self, pos, food):
         if food is None:
@@ -195,7 +195,7 @@ class MyAgent(CaptureAgent):
         features['eat_food'] = gameState.getScore()!=self.pre_score
         # print(gameState.getScore(), self.pre_score)
         # closest distance to ghost (current ghost position)
-        closest_dis_to_ghost = self.getMazeDistance(my_pos, ghost_next_pos)
+        # closest_dis_to_ghost = self.getMazeDistance(my_pos, ghost_next_pos)
         # features['distance_to_ghost'] = closest_dis_to_ghost / max(walls.width, walls.height)
         # if ghost is one or two steps away
         prob = random.uniform(0, 1)
