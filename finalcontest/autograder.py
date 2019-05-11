@@ -707,7 +707,7 @@ def runGames(layouts, agents, agents_self, display, length, numGames, record, nu
     g.run()
     print("")
     if not beQuiet: games.append(g)
-  ''' 
+  
   print("")
   #print "Preliminary Phase 3 Autograder Results:"
   print("*Results for sanity test against the staffbot: your agent should finish most games without crashing or timing out (time taken < 1200)*")
@@ -731,7 +731,7 @@ def runGames(layouts, agents, agents_self, display, length, numGames, record, nu
 
   print("Sanity Test Summary: ", passedCount, "/", len(LAYOUT_SEED), "passed sanity test")
   print("Sanity Test Score: ", (passedCount / float(len(LAYOUT_SEED))), "/", "1.0")
-  '''
+
   # if currPassed == len(LAYOUT_SEED):
   #   points += 1
   #   print "Passed sanity test with staffbot, received 1/1 on this part"
