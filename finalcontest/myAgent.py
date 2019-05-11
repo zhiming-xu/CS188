@@ -83,78 +83,8 @@ def breadth_first_search(pos, target, walls):
     # no path found
     return None
 
-
-def closest_food(pos, food):
-    if food is None:
-        return None
-    food_list = food.asList()
-    if len(food_list) == 0:
-        return None
-    min_distance = float("inf")
-    for foodLoc in food_list:
-        min_distance = min(min_distance, dist_map[pos][foodLoc])
-    return min_distance
-
-
 def closest_distance(pos1, pos2):
     return dist_map[pos1][pos2]
-
-def elegant_search(cur_state):
-    walls = cur_state.getWalls()
-    fringe = Deque()
-    closed = set()
-    pos = cur_state.getAgentPosition(0)
-    fringe.push(pos)
-    for x in range(walls.width):
-        for y in range(walls.height):
-            dist_map[(x, y)] = util.Counter()
-    while fringe.is_empty() is False:
-        cur_pos = fringe.pop()
-        cur_oppo_pos = (walls.width - cur_pos[0] - 1, walls.height - cur_pos[1] - 1)
-        closed.add(cur_pos)
-
-        # Calculate distances within half of the map
-        neighbours = Actions.getLegalNeighbors(cur_pos, walls)
-        for neighbour in neighbours:
-            if neighbour not in closed and neighbour[0] < round(walls.width / 2):
-                fringe.push(neighbour)
-        positions = set()
-        for pos_x in range(round(walls.width / 2)):
-            for pos_y in range(walls.height):
-                if walls[pos_x][pos_y] == 0:
-                    positions.add((pos_x, pos_y))
-        for position in positions:
-            if position not in closed:
-                oppo_position = (walls.width - position[0] - 1, walls.height - position[1] - 1)
-                dist_map[cur_pos][position] = dist_map[position][cur_pos] = \
-                    dist_map[cur_oppo_pos][oppo_position] = dist_map[oppo_position][cur_oppo_pos] = \
-                    breadth_first_search(cur_pos, position, walls)
-    closed.clear()
-
-    # Calculate distances between points that are in different colors
-    x = round(walls.width / 2) - 1
-    for y in range(walls.height):
-        if walls[x][y] != 0:
-            continue
-        fringe.push(pos)
-        while fringe.is_empty() is False:
-            cur_pos = fringe.pop()
-            closed.add(cur_pos)
-            neighbours = Actions.getLegalNeighbors(cur_pos, walls)
-            for neighbour in neighbours:
-                if neighbour not in closed:
-                    fringe.push(neighbour)
-            positions = set()
-            for pos_x in range(round(walls.width / 2), walls.width):
-                for pos_y in range(walls.height):
-                    if walls[pos_x][pos_y] == 0:
-                        positions.add((pos_x, pos_y))
-            for position in positions:
-                if position not in closed:
-                    distance = dist_map[cur_pos][(x, y)] + dist_map[(x + 1, y)][position] + 1
-                    if dist_map[cur_pos][position] == 0 or distance < dist_map[cur_pos][position]:
-                        dist_map[cur_pos][position] = dist_map[position][cur_pos] = distance
-    closed.clear()
 
 ##########
 # Agents #
@@ -190,7 +120,7 @@ class MyAgent(CaptureAgent):
         self.weights['closest_food'] = -7.2
         self.weights['eat_food'] = 4.6
         self.weights['distance_to_ghost'] = -.6
-        self.weights['eaten_by_ghost'] = -4
+        self.weights['eaten_by_ghost'] = -3
         self.weights['is_ghost_1_step_away'] = -4.3
         self.weights['is_ghost_2_step_away'] = -5
         self.weights['food_nearby'] = 1.2
@@ -209,9 +139,18 @@ class MyAgent(CaptureAgent):
         self.team_index = self.team_index[0]
         self.ghost_index = self.getOpponents(gameState)[0]
         self.depth = 5
-        # THIS IS A VERY ELEGANT SEARCH #
-        elegant_search(gameState)
 
+    def closest_food(self, pos, food):
+        if food is None:
+            return None
+        food_list = food.asList()
+        if len(food_list) == 0:
+            return None
+        min_distance = float("inf")
+        for foodLoc in food_list:
+            min_distance = min(min_distance, self.getMazeDistance(pos, foodLoc))
+        return min_distance
+    
     def pre_calculate(self, gameState):
         walls = gameState.getWalls()
         width = walls.width
@@ -237,9 +176,20 @@ class MyAgent(CaptureAgent):
     def alphabetaSearch(self, gameState, agentIndex, depth, alpha, beta):
         if depth == self.depth and agentIndex == self.index:
             self.pre_score = gameState.getScore()
-            for action in self.receivedBroadcast:
-                if action in gameState.getLegalActions(self.team_index):
-                    gameState = gameState.generateSuccessor(self.team_index, action)
+            if self.receivedBroadcast:
+                for action in self.receivedBroadcast:
+                    if action in gameState.getLegalActions(self.team_index):
+                        gameState = gameState.generateSuccessor(self.team_index, action)
+            else:
+                for _ in range(self.depth):
+                    legal_actions = gameState.getLegalActions(self.team_index)
+                    for action in legal_actions:
+                        next_state = gameState.generateSuccessor(self.team_index, action)
+                        if next_state.getScore()>gameState.getScore():
+                            new_game_state = next_state
+                            break
+                    if new_game_state:
+                        gameState = new_game_state
         if depth == 0:
             ret = self.compute_value(gameState), Directions.STOP
         elif agentIndex == self.index:
@@ -297,7 +247,7 @@ class MyAgent(CaptureAgent):
         ghost_min_dis, ghost_min_pos = float('inf'), (-1, -1)
         for pos in (my_pos, team_pos):
             for neighbor in ghost_legal_neighbors:
-                tmp_dis = closest_distance(neighbor, pos)
+                tmp_dis = self.getMazeDistance(neighbor,pos)
                 if tmp_dis < ghost_min_dis:
                     ghost_min_dis = tmp_dis
                     ghost_min_pos = neighbor
@@ -305,13 +255,13 @@ class MyAgent(CaptureAgent):
         # calculate features
         # eat food or not, if so, remove the food
         features['eaten_by_ghost'] = my_pos == ghost_next_pos
-        closest_dis_to_food = closest_food(my_pos, food)
+        closest_dis_to_food = self.closest_food(my_pos, food)
         if closest_dis_to_food:
             features['closest_food'] = closest_dis_to_food * 1.5 / min(walls.width, walls.height)
         features['eat_food'] = gameState.getScore()!=self.pre_score
         # print(gameState.getScore(), self.pre_score)
         # closest distance to ghost (current ghost position)
-        closest_dis_to_ghost = closest_distance(my_pos, ghost_next_pos)
+        closest_dis_to_ghost = self.getMazeDistance(my_pos, ghost_next_pos)
         features['distance_to_ghost'] = closest_dis_to_ghost / max(walls.width, walls.height)
         # if ghost is one or two steps away
         features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
