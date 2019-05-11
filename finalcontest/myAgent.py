@@ -19,52 +19,6 @@ import random, time, util, sys, heapq, math
 from game import Directions, Actions
 from util import nearestPoint
 
-##########
-# Global #
-##########
-dist_map = util.Counter()
-
-
-##########
-# Helper #
-##########
-class Deque:
-    def __init__(self):
-        self.list = []
-
-    def push(self, item):
-        self.list.insert(0, item)
-
-    def pop(self):
-        return self.list.pop()
-
-    def pop_back(self):
-        return self.list.pop(0)
-
-    def peek_item(self):
-        return self.list[0]
-
-    def is_empty(self):
-        return len(self.list) == 0
-
-
-class PriorityQueue:
-    def __init__(self):
-        self.heap = []
-        self.count = 0
-
-    def push(self, item, priority):
-        entry = (priority, self.count, item)
-        heapq.heappush(self.heap, entry)
-        self.count += 1
-
-    def pop(self):
-        (_, _, item) = heapq.heappop(self.heap)
-        return item
-
-    def peek_priority(self):
-        return min(self.heap)
-
 
 def breadth_first_search(pos, target, walls):
     fringe = [(pos[0], pos[1], 0)]
@@ -84,42 +38,6 @@ def breadth_first_search(pos, target, walls):
     # no path found
     return None
 
-
-def closestFood(pos, food, walls):
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find a food at this location then exit
-        if food[pos_x][pos_y]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in nbrs:
-            fringe.append((nbr_x, nbr_y, dist+1))
-    # no food found
-    return None
-
-def closestDistance(pos, target, walls):
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find target at this location then exit
-        if pos_x == target[0] and pos_y == target[1]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in nbrs:
-            fringe.append((nbr_x, nbr_y, dist+1))
-    # no path found
-    return None
 
 def actionsWithoutReverse(legalActions, gameState, agentIndex):
     """
@@ -168,15 +86,15 @@ class MyAgent(CaptureAgent):
         weights['eat_food'] = 4.2
         weights['is-ghosts-1-step-away'] = -4.3
         weights['is-ghosts-2-step-away'] = -5
-        weights['food_nearby'] = 1.2
         weights['closest_distance_to_ghost'] = -1.0
-        # for both
-        weights['is_dead_end'] = -1.1
-        weights['is_tunnel'] = -1.6
-        weights['is_crossing'] = .8
-        weights['is_open_area'] = 1.7
-        weights['is_stop'] = -4.0
-        weights['is_wandering'] = -4.3
+        
+        # weights['food_nearby'] = 1.2
+        # weights['is_dead_end'] = -1.1
+        # weights['is_tunnel'] = -1.6
+        # weights['is_crossing'] = .8
+        # weights['is_open_area'] = 1.7
+        # weights['is_stop'] = -4.0
+        # weights['is_wandering'] = -4.3
         weights['bias'] = 1
         self.weights = weights
         team_index = self.getTeam(gameState)
@@ -212,6 +130,42 @@ class MyAgent(CaptureAgent):
                     self.is_open_area[(i, j)] = 1
         return
     
+    def closestFood(self, pos, food, walls):
+        fringe = [(pos[0], pos[1], 0)]
+        expanded = set()
+        while fringe:
+            pos_x, pos_y, dist = fringe.pop(0)
+            if (pos_x, pos_y) in expanded:
+                continue
+            expanded.add((pos_x, pos_y))
+            # if we find a food at this location then exit
+            if food[pos_x][pos_y]:
+                return dist
+            # otherwise spread out from the location to its neighbours
+            nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
+            for nbr_x, nbr_y in nbrs:
+                fringe.append((nbr_x, nbr_y, dist+1))
+        # no food found
+        return None
+
+    def closestDistance(self, pos, target, walls):
+        fringe = [(pos[0], pos[1], 0)]
+        expanded = set()
+        while fringe:
+            pos_x, pos_y, dist = fringe.pop(0)
+            if (pos_x, pos_y) in expanded:
+                continue
+            expanded.add((pos_x, pos_y))
+            # if we find target at this location then exit
+            if pos_x == target[0] and pos_y == target[1]:
+                return dist
+            # otherwise spread out from the location to its neighbours
+            nbrs = Actions.getLegalNeighbors((pos_x, pos_y), walls)
+            for nbr_x, nbr_y in nbrs:
+                fringe.append((nbr_x, nbr_y, dist+1))
+        # no path found
+        return None
+
     def chooseAction(self, gameState):
         if self.getPreviousObservation() is not None:
             self.update_value(gameState)
@@ -224,12 +178,10 @@ class MyAgent(CaptureAgent):
         pre_value = self.pre_value
         diff = self.getReward(state) + self.discount * self.computeValueFromQValues(state)\
                - pre_value
-        #print('------------------------THIS IS DIFF---------------------------')
-        #print(diff)
-        print('WEIGHT BEFORE:', self.weights)
+        # print('WEIGHT BEFORE:', self.weights)
         for feature in pre_features:
             self.weights[feature] += self.alpha * diff * pre_features[feature]
-        print('WEIGHT AFTER:', self.weights)
+        # print('WEIGHT AFTER:', self.weights)
 
     def getReward(self, state):
         pre_state = self.getPreviousObservation()
@@ -249,7 +201,6 @@ class MyAgent(CaptureAgent):
             self.pre_action[-1] == Actions.reverseDirection(self.pre_action[-2])\
                                    if len(self.pre_action) > 1 else 0
         reward = score_bonus - stop_penalty - wandering_penalty
-        print(reward)
         return reward
 
     def getSuccessor(self, gameState, action):
@@ -280,7 +231,7 @@ class MyAgent(CaptureAgent):
         #       self.pre_action[-1] == Actions.reverseDirection(action)\
         #       if self.pre_action else 0
         # Offensive / distance to closest dot
-        min_distance = closestFood((int(next_x), int(next_y)), food_to_eat, walls)
+        min_distance = self.closestFood((int(next_x), int(next_y)), food_to_eat, walls)
         if min_distance is not None:
             features['min_distance_to_food'] = min_distance /\
                      min(walls.width, walls.height) * 1.5
@@ -297,8 +248,7 @@ class MyAgent(CaptureAgent):
         opponent_pos = []
         for opponent in opponent_index:
             opponent_pos.append(gameState.getAgentPosition(opponent))
-            distances.append(closestDistance((next_x, next_y),\
-                             opponent_pos[-1], walls))
+            distances.append(self.getMazeDistance((next_x, next_y), opponent_pos[-1]))
         if distances:
             features['closest_distance_to_ghost'] = min(distances) /\
                                     min(walls.width, walls.height)
