@@ -18,73 +18,6 @@ from captureAgents import CaptureAgent
 import random, time, util, sys, heapq, math
 from game import Directions, Actions
 
-##########
-# Global #
-##########
-dist_map = util.Counter()
-
-
-##########
-# Helper #
-##########
-class Deque:
-    def __init__(self):
-        self.list = []
-
-    def push(self, item):
-        self.list.insert(0, item)
-
-    def pop(self):
-        return self.list.pop()
-
-    def pop_back(self):
-        return self.list.pop(0)
-
-    def peek_item(self):
-        return self.list[0]
-
-    def is_empty(self):
-        return len(self.list) == 0
-
-
-class PriorityQueue:
-    def __init__(self):
-        self.heap = []
-        self.count = 0
-
-    def push(self, item, priority):
-        entry = (priority, self.count, item)
-        heapq.heappush(self.heap, entry)
-        self.count += 1
-
-    def pop(self):
-        (_, _, item) = heapq.heappop(self.heap)
-        return item
-
-    def peek_priority(self):
-        return min(self.heap)
-
-
-def breadth_first_search(pos, target, walls):
-    fringe = [(pos[0], pos[1], 0)]
-    expanded = set()
-    while fringe:
-        pos_x, pos_y, dist = fringe.pop(0)
-        if (pos_x, pos_y) in expanded:
-            continue
-        expanded.add((pos_x, pos_y))
-        # if we find target at this location then exit
-        if pos_x == target[0] and pos_y == target[1]:
-            return dist
-        # otherwise spread out from the location to its neighbours
-        neighbours = Actions.getLegalNeighbors((pos_x, pos_y), walls)
-        for nbr_x, nbr_y in neighbours:
-            fringe.append((nbr_x, nbr_y, dist + 1))
-    # no path found
-    return None
-
-def closest_distance(pos1, pos2):
-    return dist_map[pos1][pos2]
 
 ##########
 # Agents #
@@ -133,11 +66,11 @@ class MyAgent(CaptureAgent):
         self.is_tunnel = util.Counter()
         self.is_crossing = util.Counter()
         self.is_open_area = util.Counter()
-        self.food_num = len(self.getFood(gameState).asList())
         self.team_index = self.getTeam(gameState)
         self.team_index.remove(self.index)
         self.team_index = self.team_index[0]
         self.ghost_index = self.getOpponents(gameState)[0]
+        self.threshold = .6
         self.depth = 5
 
     def closest_food(self, pos, food):
@@ -183,6 +116,7 @@ class MyAgent(CaptureAgent):
             else:
                 for _ in range(self.depth):
                     legal_actions = gameState.getLegalActions(self.team_index)
+                    new_game_state = None
                     for action in legal_actions:
                         next_state = gameState.generateSuccessor(self.team_index, action)
                         if next_state.getScore()>gameState.getScore():
@@ -262,14 +196,20 @@ class MyAgent(CaptureAgent):
         # print(gameState.getScore(), self.pre_score)
         # closest distance to ghost (current ghost position)
         closest_dis_to_ghost = self.getMazeDistance(my_pos, ghost_next_pos)
-        features['distance_to_ghost'] = closest_dis_to_ghost / max(walls.width, walls.height)
+        # features['distance_to_ghost'] = closest_dis_to_ghost / max(walls.width, walls.height)
         # if ghost is one or two steps away
-        features['is_ghost_1_step_away'] = closest_dis_to_ghost <= 1
-        features['is_ghost_2_step_away'] = closest_dis_to_ghost <= 2
-        # features['is_dead_end'] = self.is_dead_end[(int(my_pos[0]), int(my_pos[1]))]
-        # features['is_tunnel'] = self.is_tunnel[(int(my_pos[0]), int(my_pos[1]))]
-        # features['is_crossing'] = self.is_crossing[(int(my_pos[0]), int(my_pos[1]))]
-        # features['is_open_area'] = self.is_open_area[(int(my_pos[0]), int(my_pos[1]))]
+        prob = random.uniform(0, 1)
+        one_step_away = Actions.getLegalNeighbors(ghost_pos, walls)
+        two_step_away = []
+        for nbr in one_step_away:
+            two_step_away += Actions.getLegalNeighbors(nbr, walls)
+        features['is_ghost_1_step_away'] = my_pos in one_step_away if prob <= self.threshold else 0
+        prob = random.uniform(0, 1)
+        features['is_ghost_2_step_away'] = my_pos in two_step_away if prob <= self.threshold ** 2 else 0
+        features['is_dead_end'] = self.is_dead_end[(int(my_pos[0]), int(my_pos[1]))]
+        features['is_tunnel'] = self.is_tunnel[(int(my_pos[0]), int(my_pos[1]))]
+        features['is_crossing'] = self.is_crossing[(int(my_pos[0]), int(my_pos[1]))]
+        features['is_open_area'] = self.is_open_area[(int(my_pos[0]), int(my_pos[1]))]
         features['bias'] = 1
         features.divideAll(10.0)
         qvalue = features * self.weights + (gameState.getScore() - self.pre_score) * 10
