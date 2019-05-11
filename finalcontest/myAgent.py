@@ -89,10 +89,10 @@ class MyAgent(CaptureAgent):
         weights['closest_distance_to_ghost'] = -1.0
         
         weights['food_nearby'] = 1.2
-        # weights['is_dead_end'] = -1.1
-        # weights['is_tunnel'] = -1.6
-        # weights['is_crossing'] = .8
-        # weights['is_open_area'] = 1.7
+        weights['is_dead_end'] = 0
+        weights['is_tunnel'] = 0
+        weights['is_crossing'] = 0
+        weights['is_open_area'] = 0
         weights['bias'] = 1
         self.weights = weights
         team_index = self.getTeam(gameState)
